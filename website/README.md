@@ -1,6 +1,6 @@
 # switchable_state website
 
-The documentation site for [switchable_state](../README.md), built with [Astro Starlight](https://starlight.astro.build) and deployed to GitHub Pages at https://eugeniotesio.github.io/switchable_state/.
+The documentation site for [switchable_state](../README.md), built with [Astro Starlight](https://starlight.astro.build) and deployed to GitHub Pages at https://switchable-state.vercel.app/.
 
 ```sh
 npm ci

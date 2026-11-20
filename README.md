@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://eugeniotesio.github.io/switchable_state/images/hero-dark.svg">
-    <img src="https://eugeniotesio.github.io/switchable_state/images/hero.svg" alt="One state contract connected to five interchangeable adapters: Cubit, GetX, MobX, Provider and Riverpod" width="720">
+    <source media="(prefers-color-scheme: dark)" srcset="https://switchable-state.vercel.app/images/hero-dark.svg">
+    <img src="https://switchable-state.vercel.app/images/hero.svg" alt="One state contract connected to five interchangeable adapters: Cubit, GetX, MobX, Provider and Riverpod" width="720">
   </picture>
 </p>
 
@@ -9,7 +9,7 @@
 
 <p align="center">
   One state-management contract for Flutter. Five interchangeable libraries.<br>
-  <a href="https://eugeniotesio.github.io/switchable_state/"><b>Documentation</b></a> ·
+  <a href="https://switchable-state.vercel.app/"><b>Documentation</b></a> ·
   <a href="https://pub.dev/packages/switchable_state">pub.dev</a> ·
   <a href="example/">Example app</a>
 </p>
@@ -34,7 +34,7 @@ Screens read state from a `StateScope` instead of passing it to each other, and 
 | [switchable_state_riverpod](packages/switchable_state_riverpod) | `RiverpodStateAdapter` (flutter_riverpod) | [![pub](https://img.shields.io/pub/v/switchable_state_riverpod.svg)](https://pub.dev/packages/switchable_state_riverpod) |
 | [switchable_state_test](packages/switchable_state_test) | `stateStoreContract`, the conformance suite for adapters | [![pub](https://img.shields.io/pub/v/switchable_state_test.svg)](https://pub.dev/packages/switchable_state_test) |
 
-Start with the [switchable_state README](packages/switchable_state/README.md) or the [documentation site](https://eugeniotesio.github.io/switchable_state/).
+Start with the [switchable_state README](packages/switchable_state/README.md) or the [documentation site](https://switchable-state.vercel.app/).
 
 ## Repository layout
 

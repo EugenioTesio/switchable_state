@@ -5,7 +5,7 @@
 
 The [MobX](https://pub.dev/packages/flutter_mobx) adapter for [switchable_state](https://pub.dev/packages/switchable_state): one state-management contract for Flutter with five interchangeable libraries.
 
-**[Documentation](https://eugeniotesio.github.io/switchable_state/adapters/mobx/)** · [switchable_state](https://eugeniotesio.github.io/switchable_state/) · [API reference](https://pub.dev/documentation/switchable_state_mobx/latest/)
+**[Documentation](https://switchable-state.vercel.app/adapters/mobx/)** · [switchable_state](https://switchable-state.vercel.app/) · [API reference](https://pub.dev/documentation/switchable_state_mobx/latest/)
 
 ## Install
 

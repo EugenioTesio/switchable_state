@@ -3,10 +3,10 @@ description: >-
   provider adapter for switchable_state. Each store is a ChangeNotifier,
   rendered with Consumer and Selector.
 version: 0.1.0
-homepage: https://eugeniotesio.github.io/switchable_state/
+homepage: https://switchable-state.vercel.app/
 repository: https://github.com/EugenioTesio/switchable_state/tree/main/packages/switchable_state_provider
 issue_tracker: https://github.com/EugenioTesio/switchable_state/issues
-documentation: https://eugeniotesio.github.io/switchable_state/adapters/provider/
+documentation: https://switchable-state.vercel.app/adapters/provider/
 topics:
   - state-management
   - provider

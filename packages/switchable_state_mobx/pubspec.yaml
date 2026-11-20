@@ -3,10 +3,10 @@ description: >-
   MobX adapter for switchable_state. Each store is an Observable changed inside
   actions and rendered with Observer and Computed selectors.
 version: 0.1.0
-homepage: https://eugeniotesio.github.io/switchable_state/
+homepage: https://switchable-state.vercel.app/
 repository: https://github.com/EugenioTesio/switchable_state/tree/main/packages/switchable_state_mobx
 issue_tracker: https://github.com/EugenioTesio/switchable_state/issues
-documentation: https://eugeniotesio.github.io/switchable_state/adapters/mobx/
+documentation: https://switchable-state.vercel.app/adapters/mobx/
 topics:
   - state-management
   - mobx

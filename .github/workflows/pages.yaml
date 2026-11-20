@@ -24,6 +24,9 @@ jobs:
       - uses: actions/checkout@v7
       - name: Build with Astro and upload the Pages artifact
         uses: withastro/action@v6
+        env:
+          SITE_URL: https://eugeniotesio.github.io
+          BASE_PATH: /switchable_state
         with:
           path: website
 

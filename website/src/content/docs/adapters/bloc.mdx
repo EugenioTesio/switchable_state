@@ -51,4 +51,4 @@ void main() {
 - **`value` is immediate.** `store.value` reads the Cubit's `state`, which updates synchronously, so `update` always sees the latest snapshot.
 - **Ownership stays with the scope.** The store is bound with `bloc:` rather than a `BlocProvider(create:)`, so the owning `StateScope` or route decides when it closes.
 
-This adapter passes the shared [conformance suite](/switchable_state/guides/custom-adapter/#what-the-suite-checks), like the other four. [API reference](https://pub.dev/documentation/switchable_state_bloc/latest/)
+This adapter passes the shared [conformance suite](../../guides/custom-adapter/#what-the-suite-checks), like the other four. [API reference](https://pub.dev/documentation/switchable_state_bloc/latest/)

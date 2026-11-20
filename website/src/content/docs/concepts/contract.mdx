@@ -13,7 +13,7 @@ abstract interface class StateAdapter {
 }
 ```
 
-You rarely call `create` yourself: the [`StateScope`](/switchable_state/concepts/ownership/) does it when a screen first reads a declared state.
+You rarely call `create` yourself: the [`StateScope`](../../concepts/ownership/) does it when a screen first reads a declared state.
 
 ## StateStore
 
@@ -37,7 +37,7 @@ Every official adapter passes the same conformance suite, so these hold whicheve
 - After `close`, `replace` throws the same `StateError` everywhere, built by `closedStoreError()`.
 
 <Aside>
-Libraries still differ in timing. Cubit delivers changes through a stream, so a rebuild can land one frame after the write: in widget tests, call `pumpAndSettle` after a write. Riverpod pauses watchers under a hidden route and catches up when shown. See each [adapter page](/switchable_state/adapters/bloc/) for details.
+Libraries still differ in timing. Cubit delivers changes through a stream, so a rebuild can land one frame after the write: in widget tests, call `pumpAndSettle` after a write. Riverpod pauses watchers under a hidden route and catches up when shown. See each [adapter page](../../adapters/bloc/) for details.
 </Aside>
 
 ## Immutable snapshots

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://eugeniotesio.github.io/switchable_state/images/hero.svg" alt="One state contract connected to five interchangeable adapters: Cubit, GetX, MobX, Provider and Riverpod" width="640">
+  <img src="https://switchable-state.vercel.app/images/hero.svg" alt="One state contract connected to five interchangeable adapters: Cubit, GetX, MobX, Provider and Riverpod" width="640">
 </p>
 
 # switchable_state
@@ -10,7 +10,7 @@
 
 One state-management contract for Flutter, with five interchangeable implementations: **Cubit, GetX, MobX, Provider and Riverpod**. Screens read state from a `StateScope` and never pass it to each other through constructors. Change one line at startup and the whole app runs on another library.
 
-**[Documentation](https://eugeniotesio.github.io/switchable_state/)** · [Example app](https://github.com/EugenioTesio/switchable_state/tree/main/example) · [API reference](https://pub.dev/documentation/switchable_state/latest/)
+**[Documentation](https://switchable-state.vercel.app/)** · [Example app](https://github.com/EugenioTesio/switchable_state/tree/main/example) · [API reference](https://pub.dev/documentation/switchable_state/latest/)
 
 ## Packages
 
@@ -136,7 +136,7 @@ The contract hides most differences. These remain:
 
 ## Learn more
 
-- [Getting started](https://eugeniotesio.github.io/switchable_state/getting-started/)
-- [Store lifetimes with go_router](https://eugeniotesio.github.io/switchable_state/guides/go-router/)
-- [Comparison with the five libraries](https://eugeniotesio.github.io/switchable_state/reference/comparison/)
+- [Getting started](https://switchable-state.vercel.app/getting-started/)
+- [Store lifetimes with go_router](https://switchable-state.vercel.app/guides/go-router/)
+- [Comparison with the five libraries](https://switchable-state.vercel.app/reference/comparison/)
 - [The example app](https://github.com/EugenioTesio/switchable_state/tree/main/example): pick a library at startup, then browse and star transactions.

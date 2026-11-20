@@ -51,4 +51,4 @@ void main() {
 - **The scope decides lifetimes.** GetX bindings and smart management only dispose dependencies for routes GetX builds itself. Here the owning `StateScope` closes the store, so lifetimes match the other adapters.
 - **Writes after close fail loudly.** A closed `Rx` silently ignores writes; this adapter throws the same `StateError` as every other adapter.
 
-This adapter passes the shared [conformance suite](/switchable_state/guides/custom-adapter/#what-the-suite-checks), like the other four. [API reference](https://pub.dev/documentation/switchable_state_getx/latest/)
+This adapter passes the shared [conformance suite](../../guides/custom-adapter/#what-the-suite-checks), like the other four. [API reference](https://pub.dev/documentation/switchable_state_getx/latest/)

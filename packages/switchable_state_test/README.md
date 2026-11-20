@@ -5,7 +5,7 @@
 
 The conformance suite for [switchable_state](https://pub.dev/packages/switchable_state) adapters. The Cubit, GetX, MobX, Provider and Riverpod adapters all pass it; run it against your own `StateAdapter` to prove that screens behave the same whichever library is registered.
 
-**[Write your own adapter](https://eugeniotesio.github.io/switchable_state/guides/custom-adapter/)** · [API reference](https://pub.dev/documentation/switchable_state_test/latest/)
+**[Write your own adapter](https://switchable-state.vercel.app/guides/custom-adapter/)** · [API reference](https://pub.dev/documentation/switchable_state_test/latest/)
 
 ## Install
 

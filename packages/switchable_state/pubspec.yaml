@@ -4,10 +4,10 @@ description: >-
   group and route-owned stores. Swap Cubit, GetX, MobX, Provider or Riverpod
   without touching screens.
 version: 0.1.0
-homepage: https://eugeniotesio.github.io/switchable_state/
+homepage: https://switchable-state.vercel.app/
 repository: https://github.com/EugenioTesio/switchable_state/tree/main/packages/switchable_state
 issue_tracker: https://github.com/EugenioTesio/switchable_state/issues
-documentation: https://eugeniotesio.github.io/switchable_state/getting-started/
+documentation: https://switchable-state.vercel.app/getting-started/
 topics:
   - state-management
   - riverpod

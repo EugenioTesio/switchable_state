@@ -3,10 +3,10 @@ description: >-
   Riverpod adapter for switchable_state. Each store is a Notifier in its own
   ProviderContainer, rendered with Consumer and provider.select.
 version: 0.1.0
-homepage: https://eugeniotesio.github.io/switchable_state/
+homepage: https://switchable-state.vercel.app/
 repository: https://github.com/EugenioTesio/switchable_state/tree/main/packages/switchable_state_riverpod
 issue_tracker: https://github.com/EugenioTesio/switchable_state/issues
-documentation: https://eugeniotesio.github.io/switchable_state/adapters/riverpod/
+documentation: https://switchable-state.vercel.app/adapters/riverpod/
 topics:
   - state-management
   - riverpod

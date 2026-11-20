@@ -3,10 +3,10 @@ description: >-
   GetX adapter for switchable_state. Each store is an Rx value rendered with
   Obx, with selective rebuilds and no GetMaterialApp needed.
 version: 0.1.0
-homepage: https://eugeniotesio.github.io/switchable_state/
+homepage: https://switchable-state.vercel.app/
 repository: https://github.com/EugenioTesio/switchable_state/tree/main/packages/switchable_state_getx
 issue_tracker: https://github.com/EugenioTesio/switchable_state/issues
-documentation: https://eugeniotesio.github.io/switchable_state/adapters/getx/
+documentation: https://switchable-state.vercel.app/adapters/getx/
 topics:
   - state-management
   - getx

@@ -2,8 +2,11 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
-const site = 'https://eugeniotesio.github.io';
-const base = '/switchable_state';
+// Vercel serves the site at the root. GitHub Pages serves it under the
+// repository name, so its workflow sets SITE_URL and BASE_PATH.
+const site = process.env.SITE_URL ?? 'https://switchable-state.vercel.app';
+const base = process.env.BASE_PATH ?? '/';
+const og = `${site}${base.replace(/\/$/, '')}/og.png`;
 const repo = 'https://github.com/EugenioTesio/switchable_state';
 
 // https://astro.build/config
@@ -25,11 +28,11 @@ export default defineConfig({
 			editLink: { baseUrl: `${repo}/edit/main/website/` },
 			lastUpdated: false,
 			head: [
-				{ tag: 'meta', attrs: { property: 'og:image', content: `${site}${base}/og.png` } },
+				{ tag: 'meta', attrs: { property: 'og:image', content: og } },
 				{ tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
 				{ tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
 				{ tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } },
-				{ tag: 'meta', attrs: { name: 'twitter:image', content: `${site}${base}/og.png` } },
+				{ tag: 'meta', attrs: { name: 'twitter:image', content: og } },
 			],
 			sidebar: [
 				{ label: 'Getting started', slug: 'getting-started' },

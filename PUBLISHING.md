@@ -4,20 +4,20 @@ This guide covers the documentation home page and releasing the seven packages t
 
 ## The home page
 
-### Why Astro Starlight on GitHub Pages
+### Why Astro Starlight
 
 These are the options for a free, public documentation site for a Flutter package, and how the five supported libraries do it:
 
 | Tool | Used by | Verdict for this project |
 | --- | --- | --- |
-| **Astro Starlight** + GitHub Pages | bloclibrary.dev | **Chosen.** Markdown/MDX pages, built-in search, light and dark themes, optimised images, and an official GitHub Pages action. Free, and it lives in this repository. |
+| **Astro Starlight** | bloclibrary.dev | **Chosen.** Markdown/MDX pages, built-in search, light and dark themes and optimised images. It builds to static files, so any static host can serve it, and it lives in this repository. |
 | Docusaurus | riverpod.dev, mobx.netlify.app | Proven, but heavier React tooling. |
 | docs.page (Invertase) | Melos, flutter_stripe | No build step, but you get less control over the look, and the site depends on a third-party service. |
 | Jaspr / jaspr_content | dart.dev, docs.flutter.dev | Written in Dart, but jaspr_content is still pre-1.0, with fewer ready-made docs features. |
 | VitePress, MkDocs Material | | VitePress 2 is still in alpha; MkDocs Material is in maintenance mode. |
 | README + API docs only | provider, get | The lowest effort, but no guides, search or visuals. |
 
-The site is published at **https://eugeniotesio.github.io/switchable_state/**, and every pubspec's `homepage` and `documentation` point to it.
+The site is hosted on **Vercel** at **https://switchable-state.vercel.app/**, and every pubspec's `homepage` and `documentation` point to it. A GitHub Pages workflow is kept as an alternative; see below.
 
 ### Edit and preview it
 
@@ -43,16 +43,25 @@ To refresh the screenshots, run the example on an iPhone simulator, save new cap
 
 ### How it deploys
 
-`.github/workflows/pages.yaml` builds the site with `withastro/action` and deploys it with `actions/deploy-pages` on every push to `main` that touches `website/`. You can also run it by hand from the Actions tab.
+**Vercel (current host).** The project `switchable-state` serves the site at the root of `https://switchable-state.vercel.app/`, using `website/vercel.json`. Deploy from your machine with the Vercel CLI:
 
-One-time setup: in the repository, go to **Settings → Pages → Build and deployment → Source** and select **GitHub Actions**.
+```sh
+cd website
+npx vercel deploy --prod
+```
+
+To deploy on every push instead, run `npx vercel git connect` inside `website/`. Alternatively, import the GitHub repository in the Vercel dashboard and set its **Root Directory** to `website`.
+
+**GitHub Pages (alternative).** `.github/workflows/pages.yaml` builds the site for `https://eugeniotesio.github.io/switchable_state/`, setting `SITE_URL` and `BASE_PATH`, and deploys it on pushes to `main` that touch `website/`. It needs GitHub Actions available on the account, plus **Settings → Pages → Source: GitHub Actions**. If you switch back, update the URLs in the pubspecs and READMEs.
+
+The site address comes from two environment variables read by `astro.config.mjs`: `SITE_URL` (default `https://switchable-state.vercel.app`) and `BASE_PATH` (default `/`). Links between pages are relative, so the same content works at either address.
 
 ### A custom domain (optional)
 
-1. Buy a domain and add a `CNAME` DNS record pointing `docs.yourdomain.dev` to `eugeniotesio.github.io`.
-2. Add `website/public/CNAME` containing `docs.yourdomain.dev`, then enter the same domain in **Settings → Pages → Custom domain** and tick **Enforce HTTPS**.
-3. In `website/astro.config.mjs`, set `site` to `https://docs.yourdomain.dev` and remove `base`. Update the absolute links in the pages, READMEs and pubspecs.
-4. With your own domain you can create a pub.dev **verified publisher**: verify the domain in Google Search Console, create the publisher on pub.dev, and transfer the packages to it. `github.io` addresses can't be verified.
+1. Buy a domain and add it in the Vercel dashboard under **Project → Settings → Domains**, for example `docs.yourdomain.dev`. Vercel shows the DNS record to create and issues the HTTPS certificate.
+2. Build with that address: set the project's `SITE_URL` environment variable to `https://docs.yourdomain.dev`, or change the default in `astro.config.mjs`.
+3. Update the absolute links in the READMEs and pubspecs.
+4. With your own domain you can create a pub.dev **verified publisher**: verify the domain in Google Search Console, create the publisher on pub.dev, and transfer the packages to it. `vercel.app` and `github.io` addresses can't be verified, because you can't add DNS records to them.
 
 ## Releasing to pub.dev
 

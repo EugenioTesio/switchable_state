@@ -11,7 +11,7 @@ hero:
     alt: One StateStore contract wired to five interchangeable adapters, lighting up one after another.
   actions:
     - text: Get started
-      link: /switchable_state/getting-started/
+      link: ./getting-started/
       icon: right-arrow
     - text: View on GitHub
       link: https://github.com/EugenioTesio/switchable_state
@@ -27,11 +27,11 @@ import Architecture from '../../assets/diagrams/architecture.svg';
 import trio from '../../assets/screens/trio.webp';
 
 <div class="chips">
-	<a class="chip" style="--dot: var(--ss-cubit)" href="/switchable_state/adapters/bloc/">Cubit</a>
-	<a class="chip" style="--dot: var(--ss-getx)" href="/switchable_state/adapters/getx/">GetX</a>
-	<a class="chip" style="--dot: var(--ss-mobx)" href="/switchable_state/adapters/mobx/">MobX</a>
-	<a class="chip" style="--dot: var(--ss-provider)" href="/switchable_state/adapters/provider/">Provider</a>
-	<a class="chip" style="--dot: var(--ss-riverpod)" href="/switchable_state/adapters/riverpod/">Riverpod</a>
+	<a class="chip" style="--dot: var(--ss-cubit)" href="./adapters/bloc/">Cubit</a>
+	<a class="chip" style="--dot: var(--ss-getx)" href="./adapters/getx/">GetX</a>
+	<a class="chip" style="--dot: var(--ss-mobx)" href="./adapters/mobx/">MobX</a>
+	<a class="chip" style="--dot: var(--ss-provider)" href="./adapters/provider/">Provider</a>
+	<a class="chip" style="--dot: var(--ss-riverpod)" href="./adapters/riverpod/">Riverpod</a>
 </div>
 
 ## Why switchable_state
@@ -122,8 +122,8 @@ The same screen, unchanged, on each library:
 ## Next steps
 
 <CardGrid>
-	<LinkCard title="Getting started" description="Declare state, add a scope, read and write from widgets." href="/switchable_state/getting-started/" />
-	<LinkCard title="Who owns a store" description="App-wide, route-group and route-owned stores, and when each one closes." href="/switchable_state/concepts/ownership/" />
-	<LinkCard title="Routes with go_router" description="ShellRoute groups, and what go() and push() do to your stores." href="/switchable_state/guides/go-router/" />
-	<LinkCard title="Compare the libraries" description="How Riverpod, flutter_bloc, provider, MobX and GetX keep state alive." href="/switchable_state/reference/comparison/" />
+	<LinkCard title="Getting started" description="Declare state, add a scope, read and write from widgets." href="./getting-started/" />
+	<LinkCard title="Who owns a store" description="App-wide, route-group and route-owned stores, and when each one closes." href="./concepts/ownership/" />
+	<LinkCard title="Routes with go_router" description="ShellRoute groups, and what go() and push() do to your stores." href="./guides/go-router/" />
+	<LinkCard title="Compare the libraries" description="How Riverpod, flutter_bloc, provider, MobX and GetX keep state alive." href="./reference/comparison/" />
 </CardGrid>

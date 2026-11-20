@@ -5,7 +5,7 @@
 
 The [provider](https://pub.dev/packages/provider) adapter for [switchable_state](https://pub.dev/packages/switchable_state): one state-management contract for Flutter with five interchangeable libraries.
 
-**[Documentation](https://eugeniotesio.github.io/switchable_state/adapters/provider/)** · [switchable_state](https://eugeniotesio.github.io/switchable_state/) · [API reference](https://pub.dev/documentation/switchable_state_provider/latest/)
+**[Documentation](https://switchable-state.vercel.app/adapters/provider/)** · [switchable_state](https://switchable-state.vercel.app/) · [API reference](https://pub.dev/documentation/switchable_state_provider/latest/)
 
 ## Install
 

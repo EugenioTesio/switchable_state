@@ -81,7 +81,7 @@ Call `createStore` from `initState`, never from `build`: that would create a new
 
 ## Reading from initState
 
-`StateScope.of(context)` registers no rebuild dependency, so it is safe in `initState`. Widgets rebuild through [`watch` and `select`](/switchable_state/concepts/rebuilds/) instead.
+`StateScope.of(context)` registers no rebuild dependency, so it is safe in `initState`. Widgets rebuild through [`watch` and `select`](../../concepts/rebuilds/) instead.
 
 ## Overrides
 
