@@ -3,7 +3,8 @@ title: Getting started
 description: Install switchable_state, declare state, add a scope and read it from any widget.
 ---
 
-import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import { Steps, Aside } from '@astrojs/starlight/components';
+import AdapterTabs from '../../components/AdapterTabs.astro';
 
 switchable_state gives every screen the same small API for state, whichever library runs underneath. You will need Flutter 3.47 or later (Dart 3.13 or later).
 
@@ -11,33 +12,7 @@ switchable_state gives every screen the same small API for state, whichever libr
 
 1. **Add the packages.** The contract lives in `switchable_state`; each library has its own adapter package.
 
-   <Tabs syncKey="adapter">
-   	<TabItem label="Riverpod">
-   		```sh
-   		flutter pub add switchable_state switchable_state_riverpod
-   		```
-   	</TabItem>
-   	<TabItem label="Cubit">
-   		```sh
-   		flutter pub add switchable_state switchable_state_bloc
-   		```
-   	</TabItem>
-   	<TabItem label="Provider">
-   		```sh
-   		flutter pub add switchable_state switchable_state_provider
-   		```
-   	</TabItem>
-   	<TabItem label="GetX">
-   		```sh
-   		flutter pub add switchable_state switchable_state_getx
-   		```
-   	</TabItem>
-   	<TabItem label="MobX">
-   		```sh
-   		flutter pub add switchable_state switchable_state_mobx
-   		```
-   	</TabItem>
-   </Tabs>
+   <AdapterTabs variant="install" />
 
 2. **Declare your state once**, as a top-level `final`. The declaration is the key screens use to find the store, the way a Riverpod provider is.
 
@@ -49,21 +24,9 @@ switchable_state gives every screen the same small API for state, whichever libr
 
    Snapshots should be immutable. Use your own classes with `==` for anything bigger than a number.
 
-3. **Put a `StateScope` above your app** and give it the adapter. This is the only line that names a library.
+3. **Put a `StateScope` above your app** and give it the adapter. The highlighted lines are the only ones that name a library.
 
-   ```dart
-   import 'package:material_ui/material_ui.dart';
-   import 'package:switchable_state_riverpod/switchable_state_riverpod.dart';
-
-   void main() {
-     runApp(
-       const StateScope(
-         adapter: RiverpodStateAdapter(),
-         child: MaterialApp(home: CounterPage()),
-       ),
-     );
-   }
-   ```
+   <AdapterTabs variant="main" />
 
 4. **Read and write from any widget below it.** `StateScope.of(context).store(key)` returns the same store everywhere; `watch` rebuilds when it changes and `update` writes a new snapshot.
 
@@ -85,7 +48,7 @@ switchable_state gives every screen the same small API for state, whichever libr
    }
    ```
 
-5. **Switch libraries** by replacing `RiverpodStateAdapter()` with `CubitStateAdapter()`, `GetXStateAdapter()`, `MobXStateAdapter()` or `ProviderStateAdapter()`, and its package. Nothing else changes.
+5. **Switch libraries** by swapping the adapter package, its import and the adapter, as the tabs above show. Nothing else changes.
 
 </Steps>
 

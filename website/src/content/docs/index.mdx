@@ -19,7 +19,8 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid, LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import AdapterTabs from '../../components/AdapterTabs.astro';
 import { Image } from 'astro:assets';
 import LibraryGallery from '../../components/LibraryGallery.astro';
 import Diagram from '../../components/Diagram.astro';
@@ -59,49 +60,7 @@ import trio from '../../assets/screens/trio.webp';
 
 Add the contract and the adapter for the library you use. Your app depends only on that library.
 
-<Tabs syncKey="adapter">
-	<TabItem label="Riverpod">
-		```sh
-		flutter pub add switchable_state switchable_state_riverpod
-		```
-	</TabItem>
-	<TabItem label="Cubit">
-		```sh
-		flutter pub add switchable_state switchable_state_bloc
-		```
-	</TabItem>
-	<TabItem label="Provider">
-		```sh
-		flutter pub add switchable_state switchable_state_provider
-		```
-	</TabItem>
-	<TabItem label="GetX">
-		```sh
-		flutter pub add switchable_state switchable_state_getx
-		```
-	</TabItem>
-	<TabItem label="MobX">
-		```sh
-		flutter pub add switchable_state switchable_state_mobx
-		```
-	</TabItem>
-</Tabs>
-
-```dart
-final counterState = AppState<int>(() => 0); // declared once
-
-void main() => runApp(
-  const StateScope(
-    adapter: RiverpodStateAdapter(), // the only line that names a library
-    child: MaterialApp(home: CounterPage()),
-  ),
-);
-
-// In any widget below the scope:
-final counter = StateScope.of(context).store(counterState);
-counter.watch((count) => Text('$count'));
-counter.update((count) => count + 1);
-```
+<AdapterTabs variant="quickstart" />
 
 ## See it running
 

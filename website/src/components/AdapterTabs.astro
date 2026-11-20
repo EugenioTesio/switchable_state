@@ -1,0 +1,72 @@
+---
+// One tab per library. Every tab shows the code for that library: the
+// package to add, its import and its adapter, with the lines that differ
+// highlighted. Tabs share a sync key, so choosing a library on one tab group
+// switches every group on the site.
+import { Code, TabItem, Tabs } from '@astrojs/starlight/components';
+
+interface Props {
+	/**
+	 * - `install`: the `flutter pub add` command.
+	 * - `quickstart`: the command plus a short counter app.
+	 * - `main`: the `main()` that puts the scope above the app.
+	 */
+	variant: 'install' | 'quickstart' | 'main';
+}
+
+const { variant } = Astro.props;
+
+const adapters = [
+	{ label: 'Riverpod', pkg: 'switchable_state_riverpod', cls: 'RiverpodStateAdapter' },
+	{ label: 'Cubit', pkg: 'switchable_state_bloc', cls: 'CubitStateAdapter' },
+	{ label: 'Provider', pkg: 'switchable_state_provider', cls: 'ProviderStateAdapter' },
+	{ label: 'GetX', pkg: 'switchable_state_getx', cls: 'GetXStateAdapter' },
+	{ label: 'MobX', pkg: 'switchable_state_mobx', cls: 'MobXStateAdapter' },
+];
+
+const install = (a: (typeof adapters)[number]) => `flutter pub add switchable_state ${a.pkg}`;
+const importLine = (a: (typeof adapters)[number]) => `import 'package:${a.pkg}/${a.pkg}.dart';`;
+
+const quickstart = (a: (typeof adapters)[number]) => `import 'package:material_ui/material_ui.dart';
+import 'package:switchable_state/switchable_state.dart';
+${importLine(a)}
+
+final counterState = AppState<int>(() => 0); // declared once
+
+void main() => runApp(
+  const StateScope(
+    adapter: ${a.cls}(), // pick the library here
+    child: MaterialApp(home: CounterPage()),
+  ),
+);
+
+// In any widget below the scope:
+final counter = StateScope.of(context).store(counterState);
+counter.watch((count) => Text('$count'));
+counter.update((count) => count + 1);`;
+
+const main = (a: (typeof adapters)[number]) => `import 'package:material_ui/material_ui.dart';
+import 'package:switchable_state/switchable_state.dart';
+${importLine(a)}
+
+void main() {
+  runApp(
+    const StateScope(
+      adapter: ${a.cls}(),
+      child: MaterialApp(home: CounterPage()),
+    ),
+  );
+}`;
+---
+
+<Tabs syncKey="adapter">
+	{
+		adapters.map((a) => (
+			<TabItem label={a.label}>
+				{variant !== 'main' && <Code code={install(a)} lang="sh" mark={a.pkg} />}
+				{variant === 'quickstart' && <Code code={quickstart(a)} lang="dart" mark={[importLine(a), `${a.cls}()`]} />}
+				{variant === 'main' && <Code code={main(a)} lang="dart" mark={[importLine(a), `${a.cls}()`]} />}
+			</TabItem>
+		))
+	}
+</Tabs>
