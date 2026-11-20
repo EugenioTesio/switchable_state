@@ -1,0 +1,31 @@
+---
+// The example's Transactions screen running on each of the five libraries.
+import { Image } from 'astro:assets';
+import cubit from '../assets/screens/transactions_cubit.webp';
+import getx from '../assets/screens/transactions_getx.webp';
+import mobx from '../assets/screens/transactions_mobx.webp';
+import provider from '../assets/screens/transactions_provider.webp';
+import riverpod from '../assets/screens/transactions_riverpod.webp';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const shots = [
+	{ name: 'Cubit', src: cubit, color: 'var(--ss-cubit)', href: `${base}/adapters/bloc/` },
+	{ name: 'GetX', src: getx, color: 'var(--ss-getx)', href: `${base}/adapters/getx/` },
+	{ name: 'MobX', src: mobx, color: 'var(--ss-mobx)', href: `${base}/adapters/mobx/` },
+	{ name: 'Provider', src: provider, color: 'var(--ss-provider)', href: `${base}/adapters/provider/` },
+	{ name: 'Riverpod', src: riverpod, color: 'var(--ss-riverpod)', href: `${base}/adapters/riverpod/` },
+];
+---
+
+<div class="gallery not-content">
+	{
+		shots.map((shot) => (
+			<a href={shot.href} style="text-decoration: none">
+				<figure style={`--dot: ${shot.color}`}>
+					<Image src={shot.src} alt={`The Transactions screen of the example app running on ${shot.name}`} widths={[240, 480]} sizes="(max-width: 50rem) 33vw, 180px" />
+					<figcaption>{shot.name}</figcaption>
+				</figure>
+			</a>
+		))
+	}
+</div>

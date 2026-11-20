@@ -1,0 +1,54 @@
+---
+title: Provider
+description: The Provider adapter for switchable_state, backed by provider 6.1.
+---
+
+import { Image } from 'astro:assets';
+import shot from '../../../assets/screens/transactions_provider.webp';
+
+<div class="split">
+<div>
+
+[`switchable_state_provider`](https://pub.dev/packages/switchable_state_provider) runs switchable_state on [provider](https://pub.dev/packages/provider) 6.1.
+
+Each store is a `ChangeNotifier` that notifies only when the snapshot changes. `watch` provides it with `ChangeNotifierProvider.value` and renders with a `Consumer`; `select` uses a `Selector`.
+
+</div>
+<Image src={shot} alt="The example's Transactions screen running on Provider" widths={[224, 448]} sizes="14rem" />
+</div>
+
+```sh
+flutter pub add switchable_state switchable_state_provider
+```
+
+```dart
+import 'package:switchable_state/switchable_state.dart';
+import 'package:switchable_state_provider/switchable_state_provider.dart';
+
+void main() {
+  runApp(
+    const StateScope(
+      adapter: ProviderStateAdapter(),
+      child: MyApp(),
+    ),
+  );
+}
+```
+
+## How it maps to provider
+
+| Contract | provider |
+| --- | --- |
+| Store | A `ChangeNotifier` |
+| `replace` | Assign and `notifyListeners()` when it changed |
+| `watch` | `ChangeNotifierProvider.value` + `Consumer` |
+| `select` | `Selector` with `shouldRebuild: (a, b) => a != b` |
+| `close` | `ChangeNotifier.dispose()` |
+
+## Things to know
+
+- **`==`, not deep equality.** provider's `Selector` compares collections deeply by default; this adapter compares with `==`, like the other four.
+- **Unmounting never disposes.** Stores are provided with `.value`, so a watcher leaving the tree doesn't dispose the store; its owner does.
+- **Keys, not types.** Stores are found by their `AppState` declaration, so two states of the same type never shadow each other.
+
+This adapter passes the shared [conformance suite](/switchable_state/guides/custom-adapter/#what-the-suite-checks), like the other four. [API reference](https://pub.dev/documentation/switchable_state_provider/latest/)

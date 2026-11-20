@@ -1,0 +1,31 @@
+---
+title: Comparison with the five libraries
+description: How Riverpod, flutter_bloc, provider, MobX and GetX keep state alive, look it up, select from it and test it, and where switchable_state fits.
+---
+
+switchable_state's ownership model follows what each library already does, checked against the pinned sources and their official guides.
+
+| | App-wide state | Lookup | Rebuild for one part | Who closes it | Test seeding | State for a group of routes |
+| --- | --- | --- | --- | --- | --- | --- |
+| **switchable_state** | `StateScope` + `AppState` | Declared key: `StateScope.of(context).store(key)` | `select` | The owning scope, or `StateStoreOwner` | `overrides` | `AppState.grouped` + `StateScope.group` |
+| Riverpod 3.5 | `ProviderScope`; plain providers stay alive (code generation: `keepAlive: true`) | Declared provider, `ref.watch` / `read` | `provider.select` | The container; `autoDispose` | `overrides` | Nested scope or `autoDispose` |
+| flutter_bloc 9.1 | `BlocProvider` / `MultiBlocProvider` above the app, lazy by default | By type: `context.read` / `watch`, `BlocBuilder` | `BlocSelector`, `context.select`, `buildWhen` | `BlocProvider(create:)`; `.value` never closes | `BlocProvider.value(mock)` | Provider in a subtree; `.value` hands it to a pushed route |
+| provider 6.1 | `MultiProvider` above the app, lazy by default | By type, nearest wins (one instance per type) | `Selector`, `context.select` | `ChangeNotifierProvider(create:)` | `.value` | Provider in a subtree |
+| MobX 2.7 | A root store with child feature stores, usually injected with Provider | `Provider.of` or constructor | `Computed` + `Observer` track only what they read | A screen store's `dispose`; Provider's dispose for app stores | Constructor injection | Provider in a subtree |
+| GetX 4.7 | `Get.put(permanent: true)`, `GetxService`, `initialBinding` | `Get.find<T>(tag:)`, no `BuildContext` | Each `Obx` follows the `Rx` values it reads | Bindings and smart management, only for routes GetX builds | `Get.replace` | Bindings per `GetPage` (GetX routing only) |
+
+## Where each library adds value
+
+switchable_state covers the common ground: holding a snapshot, rebuilding, and lifetimes. When you need more, the adapter's library is right there.
+
+| Library | Adapter | Reach for it directly when you need |
+| --- | --- | --- |
+| [Riverpod](https://pub.dev/packages/flutter_riverpod) | A `Notifier` watched by a `Consumer`, in a store-owned container | Dependent queries, cache invalidation and async state |
+| [flutter_bloc](https://pub.dev/packages/flutter_bloc) | A `Cubit` with `BlocBuilder` and `BlocSelector` | Explicit transitions; a full `Bloc` adds typed events |
+| [provider](https://pub.dev/packages/provider) | A `ChangeNotifier` with `Consumer` and `Selector` | Scoped models with straightforward imperative updates |
+| [GetX](https://pub.dev/packages/get) | An `Rx<S>` read inside `Obx` | Concise reactive reads and writes |
+| [MobX](https://pub.dev/packages/flutter_mobx) | An `Observable<S>` with `Observer` and `Computed` | Computed values and automatic dependency tracking |
+
+## In a modular app
+
+The shell owns adapter registration and the root `StateScope`. A shared foundations package can depend on `switchable_state` alone, and each feature package owns its state declarations and controllers, without ever importing a state-management library.

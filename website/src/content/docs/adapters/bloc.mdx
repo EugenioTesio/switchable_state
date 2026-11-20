@@ -1,0 +1,54 @@
+---
+title: Cubit (flutter_bloc)
+description: The Cubit adapter for switchable_state, backed by flutter_bloc 9.1.
+---
+
+import { Image } from 'astro:assets';
+import shot from '../../../assets/screens/transactions_cubit.webp';
+
+<div class="split">
+<div>
+
+[`switchable_state_bloc`](https://pub.dev/packages/switchable_state_bloc) runs switchable_state on [flutter_bloc](https://pub.dev/packages/flutter_bloc) 9.1.
+
+Each store is a `Cubit<S>` that publishes with `emit`. Widgets rebuild through `BlocBuilder` and `BlocSelector`, bound directly to the store, so no `BlocProvider` is needed.
+
+</div>
+<Image src={shot} alt="The example's Transactions screen running on Cubit" widths={[224, 448]} sizes="14rem" />
+</div>
+
+```sh
+flutter pub add switchable_state switchable_state_bloc
+```
+
+```dart
+import 'package:switchable_state/switchable_state.dart';
+import 'package:switchable_state_bloc/switchable_state_bloc.dart';
+
+void main() {
+  runApp(
+    const StateScope(
+      adapter: CubitStateAdapter(),
+      child: MyApp(),
+    ),
+  );
+}
+```
+
+## How it maps to flutter_bloc
+
+| Contract | flutter_bloc |
+| --- | --- |
+| Store | A `Cubit<S>` |
+| `replace` | `emit(next)` |
+| `watch` | `BlocBuilder` bound to the store |
+| `select` | `BlocSelector` |
+| `close` | `Cubit.close()` |
+
+## Things to know
+
+- **A rebuild can land one frame after the write.** A `Cubit` delivers changes through its stream. In widget tests, call `pumpAndSettle()` after a write rather than a single `pump()`.
+- **`value` is immediate.** `store.value` reads the Cubit's `state`, which updates synchronously, so `update` always sees the latest snapshot.
+- **Ownership stays with the scope.** The store is bound with `bloc:` rather than a `BlocProvider(create:)`, so the owning `StateScope` or route decides when it closes.
+
+This adapter passes the shared [conformance suite](/switchable_state/guides/custom-adapter/#what-the-suite-checks), like the other four. [API reference](https://pub.dev/documentation/switchable_state_bloc/latest/)

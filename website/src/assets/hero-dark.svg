@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 470" width="720" height="470" role="img" aria-labelledby="title desc">
+  <title id="title">switchable_state</title>
+  <desc id="desc">One StateStore contract in the centre, wired to five interchangeable adapters: Cubit, GetX, MobX, Provider and Riverpod. Each adapter lights up in turn.</desc>
+  <defs>
+    <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.3" fill="#3cc7b0" opacity="0.1" />
+    </pattern>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1f9e8c" stop-opacity="0.38" />
+      <stop offset="100%" stop-color="#1f9e8c" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="hubBorder" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3cc7b0" />
+      <stop offset="100%" stop-color="#3cc7b0" />
+    </linearGradient>
+    <radialGradient id="fade" cx="50%" cy="50%" r="55%">
+      <stop offset="60%" stop-color="#fff" />
+      <stop offset="100%" stop-color="#000" />
+    </radialGradient>
+    <mask id="vignette"><rect width="720" height="470" fill="url(#fade)" /></mask>
+    <filter id="shadow" x="-20%" y="-30%" width="140%" height="170%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.45" />
+    </filter>
+    <filter id="glow" x="-30%" y="-60%" width="160%" height="220%">
+      <feGaussianBlur stdDeviation="3" result="b" />
+      <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+    </filter>
+  </defs>
+  <style>
+    .wire { stroke: #2c4440; stroke-width: 2; stroke-dasharray: 5 7; fill: none; }
+    .flow { stroke-width: 3; stroke-dasharray: 3 11; stroke-linecap: round; fill: none; animation: flow 0.9s linear infinite; }
+    .pin { fill: #13201e; stroke: #3cc7b0; stroke-width: 2; }
+    .card { fill: #13201e; stroke: #2c4440; stroke-width: 1.5; }
+    .letter { font: 700 16px Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; fill: #ffffff; }
+    .name { font: 650 15px Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; fill: #e6f2ef; }
+    .native { font: 500 11.5px 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fill: #9bb3ae; }
+    .title { font: 700 17px 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fill: #e6f2ef; }
+    .chip { fill: #1c302d; }
+    .member { font: 600 11.5px 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fill: #3cc7b0; }
+    .label { font: 500 12px Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; fill: #9bb3ae; }
+    .active { font: 700 13px Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+    .on { opacity: 0; animation: on 10s ease-in-out infinite; }
+    
+    .orbit { fill: none; stroke: #3cc7b0; stroke-opacity: 0.18; stroke-width: 1.5; stroke-dasharray: 2 9; animation: spin 60s linear infinite; transform-origin: 360px 235px; }
+    @keyframes on { 0% { opacity: 0 } 3% { opacity: 1 } 17% { opacity: 1 } 20% { opacity: 0 } 100% { opacity: 0 } }
+    @keyframes flow { to { stroke-dashoffset: -28 } }
+    @keyframes spin { to { transform: rotate(360deg) } }
+    @media (prefers-reduced-motion: reduce) {
+      .on, .flow, .orbit { animation: none; }
+      .on[style*="delay:0s"] { opacity: 1; }
+    }
+  </style>
+  <rect width="720" height="470" fill="url(#dots)" mask="url(#vignette)" />
+  <ellipse cx="360" cy="235" rx="250" ry="170" fill="url(#halo)" />
+  <ellipse cx="360" cy="235" rx="274" ry="182" class="orbit" />
+  <g fill="none">
+    <path d="M360 156 L360 87" class="wire" />
+    <g class="on" style="animation-delay:0s">
+      <path d="M360 156 L360 87" stroke="#6366f1" stroke-width="3" stroke-linecap="round" opacity="0.35" />
+      <path d="M360 156 L360 87" stroke="#6366f1" class="flow" />
+    </g>
+    <circle cx="360" cy="156" r="4" class="pin" />
+    <circle cx="360" cy="87" r="4" class="pin" />
+    <path d="M482 208.7 L534.6 197.3" class="wire" />
+    <g class="on" style="animation-delay:-8s">
+      <path d="M482 208.7 L534.6 197.3" stroke="#e0812f" stroke-width="3" stroke-linecap="round" opacity="0.35" />
+      <path d="M482 208.7 L534.6 197.3" stroke="#e0812f" class="flow" />
+    </g>
+    <circle cx="482" cy="208.7" r="4" class="pin" />
+    <circle cx="534.6" cy="197.3" r="4" class="pin" />
+    <path d="M446.4 314 L483.9 348.2" class="wire" />
+    <g class="on" style="animation-delay:-6s">
+      <path d="M446.4 314 L483.9 348.2" stroke="#e2486f" stroke-width="3" stroke-linecap="round" opacity="0.35" />
+      <path d="M446.4 314 L483.9 348.2" stroke="#e2486f" class="flow" />
+    </g>
+    <circle cx="446.4" cy="314" r="4" class="pin" />
+    <circle cx="483.9" cy="348.2" r="4" class="pin" />
+    <path d="M273.6 314 L236.1 348.2" class="wire" />
+    <g class="on" style="animation-delay:-4s">
+      <path d="M273.6 314 L236.1 348.2" stroke="#0ea5c6" stroke-width="3" stroke-linecap="round" opacity="0.35" />
+      <path d="M273.6 314 L236.1 348.2" stroke="#0ea5c6" class="flow" />
+    </g>
+    <circle cx="273.6" cy="314" r="4" class="pin" />
+    <circle cx="236.1" cy="348.2" r="4" class="pin" />
+    <path d="M238 208.7 L185.4 197.3" class="wire" />
+    <g class="on" style="animation-delay:-2s">
+      <path d="M238 208.7 L185.4 197.3" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round" opacity="0.35" />
+      <path d="M238 208.7 L185.4 197.3" stroke="#8b5cf6" class="flow" />
+    </g>
+    <circle cx="238" cy="208.7" r="4" class="pin" />
+    <circle cx="185.4" cy="197.3" r="4" class="pin" />
+  </g>
+  <g>
+    <rect x="242" y="160" width="236" height="150" rx="22" fill="#13201e" stroke="url(#hubBorder)" stroke-width="2.5" filter="url(#shadow)" />
+    <text x="260" y="192" class="title">StateStore&lt;S&gt;</text>
+    <circle cx="454" cy="187" r="5" fill="#3cc7b0">
+      <animate attributeName="opacity" values="1;0.35;1" dur="2s" repeatCount="indefinite" />
+    </circle>
+      <rect x="260" y="210" width="62" height="22" rx="11" class="chip" /><text x="291" y="225" text-anchor="middle" class="member">value</text><rect x="328" y="210" width="62" height="22" rx="11" class="chip" /><text x="359" y="225" text-anchor="middle" class="member">replace</text><rect x="396" y="210" width="62" height="22" rx="11" class="chip" /><text x="427" y="225" text-anchor="middle" class="member">update</text>
+      <rect x="260" y="240" width="62" height="22" rx="11" class="chip" /><text x="291" y="255" text-anchor="middle" class="member">watch</text><rect x="328" y="240" width="62" height="22" rx="11" class="chip" /><text x="359" y="255" text-anchor="middle" class="member">select</text><rect x="396" y="240" width="62" height="22" rx="11" class="chip" /><text x="427" y="255" text-anchor="middle" class="member">close</text>
+    <text x="260" y="293" class="label">adapter:</text>
+      <text x="334" y="293" class="active on" fill="#6366f1" style="animation-delay:0s">Cubit</text>
+      <text x="334" y="293" class="active on" fill="#e0812f" style="animation-delay:-8s">GetX</text>
+      <text x="334" y="293" class="active on" fill="#e2486f" style="animation-delay:-6s">MobX</text>
+      <text x="334" y="293" class="active on" fill="#0ea5c6" style="animation-delay:-4s">Provider</text>
+      <text x="334" y="293" class="active on" fill="#8b5cf6" style="animation-delay:-2s">Riverpod</text>
+  </g>
+  <g>
+    <g>
+      <rect x="273" y="18" width="174" height="70" rx="19"
+        fill="none" stroke="#6366f1" stroke-width="2.5" class="on" style="animation-delay:0s" filter="url(#glow)" />
+      <rect x="278" y="23" width="164" height="60" rx="14" class="card" filter="url(#shadow)" />
+      <rect x="290" y="38" width="30" height="30" rx="8" fill="#6366f1" />
+      <text x="305" y="58.5" text-anchor="middle" class="letter">C</text>
+      <text x="330" y="50" class="name">Cubit</text>
+      <text x="330" y="68" class="native">Cubit&lt;S&gt;</text>
+    </g>
+    <g>
+      <rect x="533.6" y="143.8" width="174" height="70" rx="19"
+        fill="none" stroke="#e0812f" stroke-width="2.5" class="on" style="animation-delay:-8s" filter="url(#glow)" />
+      <rect x="538.6" y="148.8" width="164" height="60" rx="14" class="card" filter="url(#shadow)" />
+      <rect x="550.6" y="163.8" width="30" height="30" rx="8" fill="#e0812f" />
+      <text x="565.6" y="184.3" text-anchor="middle" class="letter">G</text>
+      <text x="590.6" y="175.8" class="name">GetX</text>
+      <text x="590.6" y="193.8" class="native">Rx&lt;S&gt;</text>
+    </g>
+    <g>
+      <rect x="434.1" y="347.2" width="174" height="70" rx="19"
+        fill="none" stroke="#e2486f" stroke-width="2.5" class="on" style="animation-delay:-6s" filter="url(#glow)" />
+      <rect x="439.1" y="352.2" width="164" height="60" rx="14" class="card" filter="url(#shadow)" />
+      <rect x="451.1" y="367.2" width="30" height="30" rx="8" fill="#e2486f" />
+      <text x="466.1" y="387.7" text-anchor="middle" class="letter">M</text>
+      <text x="491.1" y="379.2" class="name">MobX</text>
+      <text x="491.1" y="397.2" class="native">Observable&lt;S&gt;</text>
+    </g>
+    <g>
+      <rect x="111.9" y="347.2" width="174" height="70" rx="19"
+        fill="none" stroke="#0ea5c6" stroke-width="2.5" class="on" style="animation-delay:-4s" filter="url(#glow)" />
+      <rect x="116.9" y="352.2" width="164" height="60" rx="14" class="card" filter="url(#shadow)" />
+      <rect x="128.9" y="367.2" width="30" height="30" rx="8" fill="#0ea5c6" />
+      <text x="143.9" y="387.7" text-anchor="middle" class="letter">P</text>
+      <text x="168.9" y="379.2" class="name">Provider</text>
+      <text x="168.9" y="397.2" class="native">ChangeNotifier</text>
+    </g>
+    <g>
+      <rect x="12.4" y="143.8" width="174" height="70" rx="19"
+        fill="none" stroke="#8b5cf6" stroke-width="2.5" class="on" style="animation-delay:-2s" filter="url(#glow)" />
+      <rect x="17.4" y="148.8" width="164" height="60" rx="14" class="card" filter="url(#shadow)" />
+      <rect x="29.4" y="163.8" width="30" height="30" rx="8" fill="#8b5cf6" />
+      <text x="44.4" y="184.3" text-anchor="middle" class="letter">R</text>
+      <text x="69.4" y="175.8" class="name">Riverpod</text>
+      <text x="69.4" y="193.8" class="native">Notifier&lt;S&gt;</text>
+    </g>
+  </g>
+</svg>

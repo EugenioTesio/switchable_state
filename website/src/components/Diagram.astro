@@ -1,0 +1,14 @@
+---
+// Wraps an inline SVG diagram so it follows the site's light and dark theme.
+interface Props {
+	caption?: string;
+	/** For tall diagrams that should not stretch to the full width. */
+	narrow?: boolean;
+}
+const { caption, narrow = false } = Astro.props;
+---
+
+<figure class:list={['diagram', 'not-content', { narrow }]}>
+	<slot />
+	{caption && <figcaption>{caption}</figcaption>}
+</figure>

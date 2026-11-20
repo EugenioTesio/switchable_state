@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="switchable_state">
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#16665c" />
+  <g stroke="#b4ece2" stroke-width="2.5" stroke-linecap="round" opacity="0.9">
+    <path d="M32 32 L32 13" /><path d="M32 32 L50 26" /><path d="M32 32 L43 48" /><path d="M32 32 L21 48" /><path d="M32 32 L14 26" />
+  </g>
+  <circle cx="32" cy="13" r="5" fill="#6366f1" />
+  <circle cx="50" cy="26" r="5" fill="#e0812f" />
+  <circle cx="43" cy="48" r="5" fill="#e2486f" />
+  <circle cx="21" cy="48" r="5" fill="#0ea5c6" />
+  <circle cx="14" cy="26" r="5" fill="#8b5cf6" />
+  <rect x="24" y="24" width="16" height="16" rx="5" fill="#ffffff" />
+</svg>

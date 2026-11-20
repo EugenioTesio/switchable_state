@@ -1,0 +1,28 @@
+name: switchable_state_test
+description: >-
+  Conformance suite for switchable_state adapters. Run stateStoreContract
+  against any StateAdapter to prove it behaves like the official ones.
+version: 0.1.0
+homepage: https://eugeniotesio.github.io/switchable_state/
+repository: https://github.com/EugenioTesio/switchable_state/tree/main/packages/switchable_state_test
+issue_tracker: https://github.com/EugenioTesio/switchable_state/issues
+documentation: https://eugeniotesio.github.io/switchable_state/guides/custom-adapter/
+topics:
+  - state-management
+  - testing
+
+environment:
+  sdk: ^3.13.0
+  flutter: '>=3.47.0'
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
+  switchable_state: ^0.1.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0

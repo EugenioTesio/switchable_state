@@ -1,0 +1,157 @@
+/* Brand: deep teal, shared with the example app's seed colour (#16665c). */
+:root {
+	--sl-color-accent-low: #0c2f2a;
+	--sl-color-accent: #2bb39e;
+	--sl-color-accent-high: #b4ece2;
+	--ss-cubit: #6366f1;
+	--ss-getx: #e0812f;
+	--ss-mobx: #e2486f;
+	--ss-provider: #0ea5c6;
+	--ss-riverpod: #8b5cf6;
+}
+
+:root[data-theme='light'] {
+	--sl-color-accent-low: #c9ece5;
+	--sl-color-accent: #16665c;
+	--sl-color-accent-high: #0b3c35;
+}
+
+/* Hero: a larger illustration; the SVG carries its own halo. */
+.hero > img {
+	width: min(100%, 38rem);
+	filter: drop-shadow(0 24px 48px color-mix(in srgb, var(--sl-color-accent) 14%, transparent));
+}
+@media (min-width: 50rem) {
+	.hero {
+		grid-template-columns: 5fr 6fr;
+	}
+}
+
+/* Inline SVG diagrams. */
+.diagram {
+	margin-block: 1.5rem;
+	padding: 0.75rem;
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 1rem;
+	background: var(--sl-color-gray-7, var(--sl-color-black));
+	overflow-x: auto;
+}
+.diagram svg {
+	display: block;
+	width: 100%;
+	min-width: 560px;
+	height: auto;
+}
+.diagram.narrow svg {
+	min-width: 0;
+	max-width: 32rem;
+	margin-inline: auto;
+}
+.diagram figcaption {
+	margin-top: 0.75rem;
+	font-size: var(--sl-text-sm);
+	color: var(--sl-color-gray-3);
+}
+
+/* Screenshot gallery. */
+.gallery {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 0.75rem;
+	margin-block: 1.5rem;
+}
+.gallery figure {
+	margin: 0;
+	text-align: center;
+}
+.gallery img {
+	width: 100%;
+	height: auto;
+	transition: transform 0.25s ease;
+}
+.gallery figure:hover img {
+	transform: translateY(-6px);
+}
+.gallery figcaption {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	margin-top: 0.25rem;
+	font-size: var(--sl-text-sm);
+	font-weight: 600;
+	color: var(--sl-color-white);
+}
+.gallery figcaption::before {
+	content: '';
+	width: 0.6rem;
+	height: 0.6rem;
+	border-radius: 50%;
+	background: var(--dot, var(--sl-color-accent));
+}
+@media (max-width: 50rem) {
+	.gallery {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+@media (max-width: 30rem) {
+	.gallery {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+.showcase {
+	display: block;
+	width: 100%;
+	max-width: 56rem;
+	height: auto;
+	margin: 1rem auto;
+}
+
+/* A phone beside text on the adapter pages. */
+.split {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 14rem;
+	gap: 2rem;
+	align-items: start;
+}
+.split img {
+	width: 100%;
+	height: auto;
+}
+@media (max-width: 50rem) {
+	.split {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.split img {
+		max-width: 14rem;
+		margin-inline: auto;
+	}
+}
+
+/* Adapter colour chips. */
+.chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.15rem 0.7rem;
+	border-radius: 999px;
+	border: 1px solid color-mix(in srgb, var(--dot) 60%, transparent);
+	background: color-mix(in srgb, var(--dot) 14%, transparent);
+	font-size: var(--sl-text-sm);
+	font-weight: 600;
+	color: var(--sl-color-white);
+	text-decoration: none;
+}
+.chip::before {
+	content: '';
+	width: 0.55rem;
+	height: 0.55rem;
+	border-radius: 50%;
+	background: var(--dot);
+}
+.chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	justify-content: center;
+}

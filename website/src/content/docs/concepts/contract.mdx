@@ -1,0 +1,63 @@
+---
+title: The contract
+description: StateAdapter and StateStore, the two interfaces every library implements.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Two interfaces make up the contract. A **`StateAdapter`** creates stores with one library; a **`StateStore<S>`** holds one immutable snapshot of type `S` and renders it.
+
+```dart
+abstract interface class StateAdapter {
+  StateStore<S> create<S extends Object>(S initial);
+}
+```
+
+You rarely call `create` yourself: the [`StateScope`](/switchable_state/concepts/ownership/) does it when a screen first reads a declared state.
+
+## StateStore
+
+| Member | What it does |
+| --- | --- |
+| `S get value` | The current snapshot. A write is visible immediately. After `close` it keeps returning the last snapshot. |
+| `void replace(S next)` | Publishes `next` to every watching widget. Throws a `StateError` after `close`. |
+| `void update(S Function(S) change)` | Replaces the snapshot with `change(value)`, reading the latest value even after an `await`. Skips the write when the result is `==` to the current snapshot. |
+| `Widget watch(render)` | A widget that renders the snapshot on mount and rebuilds on every change. |
+| `Widget select(pick, render)` | Like `watch`, but rebuilds only when `pick`'s result changes, compared with `==`. |
+| `Future<void> close()` | Releases the library's store. Later calls do nothing. |
+
+## Same behaviour on every library
+
+Every official adapter passes the same conformance suite, so these hold whichever library is registered:
+
+- Two `create` calls give independent stores.
+- A watcher rebuilt by its parent uses the new `render` function, and a selector applies its new `pick` to the current snapshot.
+- A selector nested inside another store's watcher follows both stores.
+- Widgets under a route covered by another one show the latest state once the route is visible again.
+- After `close`, `replace` throws the same `StateError` everywhere, built by `closedStoreError()`.
+
+<Aside>
+Libraries still differ in timing. Cubit delivers changes through a stream, so a rebuild can land one frame after the write: in widget tests, call `pumpAndSettle` after a write. Riverpod pauses watchers under a hidden route and catches up when shown. See each [adapter page](/switchable_state/adapters/bloc/) for details.
+</Aside>
+
+## Immutable snapshots
+
+A store replaces whole snapshots; it never mutates them. `update` and `select` compare with `==`, so return the same instance when nothing changed, or implement `==` on your value classes, and they skip the work:
+
+```dart
+final class TransactionsState {
+  const TransactionsState._(this.entries, this.pendingOnly, this.status);
+  const TransactionsState.initial() : this._(const [], false, LoadStatus.idle);
+
+  final List<TransactionEntry> entries;
+  final bool pendingOnly;
+  final LoadStatus status;
+
+  // Unchanged filter: return this, so update() doesn't notify anyone.
+  TransactionsState withFilter(bool enabled) => enabled == pendingOnly
+      ? this
+      : TransactionsState._(entries, enabled, status);
+}
+
+store.update((state) => state.withFilter(true));
+```

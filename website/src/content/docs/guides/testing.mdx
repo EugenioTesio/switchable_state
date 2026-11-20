@@ -1,0 +1,90 @@
+---
+title: Testing
+description: Seed state with overrides, run widget tests on every adapter, and wait for streams to settle.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Wrap a screen in a scope
+
+A screen test doesn't need the whole app: give the screen a scope and an adapter.
+
+```dart
+testWidgets('shows the count', (tester) async {
+  await tester.pumpWidget(
+    const StateScope(
+      adapter: CubitStateAdapter(),
+      child: MaterialApp(home: CounterPage()),
+    ),
+  );
+  expect(find.text('0'), findsOneWidget);
+});
+```
+
+## Start from prepared state
+
+`overrideWith` replaces a state's initial value in that scope:
+
+```dart
+await tester.pumpWidget(
+  StateScope(
+    adapter: const RiverpodStateAdapter(),
+    overrides: [
+      starredState.overrideWith(
+        () => const StarredState.initial().toggled('Pending purchase'),
+      ),
+    ],
+    child: MaterialApp(home: TransactionsPage(load: () async => rows)),
+  ),
+);
+expect(find.text('Starred (1)'), findsOneWidget);
+```
+
+## Run every test on every library
+
+Because screens only see the contract, one loop covers all five adapters:
+
+```dart
+const adapters = <String, StateAdapter>{
+  'Cubit': CubitStateAdapter(),
+  'GetX': GetXStateAdapter(),
+  'MobX': MobXStateAdapter(),
+  'Provider': ProviderStateAdapter(),
+  'Riverpod': RiverpodStateAdapter(),
+};
+
+void main() {
+  for (final MapEntry(key: name, value: adapter) in adapters.entries) {
+    testWidgets('$name: the counter counts', (tester) async {
+      await tester.pumpWidget(
+        StateScope(adapter: adapter, child: const MaterialApp(home: CounterPage())),
+      );
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      expect(find.text('1'), findsOneWidget);
+    });
+  }
+}
+```
+
+<Aside type="caution" title="Use pumpAndSettle after a write">
+Cubit delivers changes through a stream, so a rebuild can land one frame after the write. A single `pump()` passes on four libraries and fails on Cubit; `pumpAndSettle()` passes on all five.
+</Aside>
+
+## Test the app with a chosen library
+
+The example registers the adapter in a `get_it` locator. Each test gets a fresh locator and picks a library the way a user does:
+
+```dart
+final services = GetIt.asNewInstance();
+addTearDown(() => services.reset());
+
+await tester.pumpWidget(buildApp(services, load: () async => entries));
+await tester.pumpAndSettle();
+await tester.tap(find.text('Riverpod'));
+await tester.pumpAndSettle();
+```
+
+## Testing an adapter
+
+If you write your own `StateAdapter`, run the conformance suite from `switchable_state_test` against it. See [Write your own adapter](/switchable_state/guides/custom-adapter/).

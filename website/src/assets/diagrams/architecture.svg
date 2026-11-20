@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 384" role="img" aria-label="Screens read stores from StateScope by key; the scope asks the StateAdapter to create each store; the adapter backs it with a Cubit, Rx, Observable, ChangeNotifier or Notifier; watch and select rebuild only the widgets that read what changed.">
+  <style>
+    .d-box { fill: var(--sl-color-gray-6); stroke: var(--sl-color-gray-5); stroke-width: 1.5; }
+    .d-card { fill: var(--sl-color-black); stroke: var(--sl-color-gray-5); stroke-width: 1.2; }
+    .d-hl { fill: var(--sl-color-accent-low); stroke: var(--sl-color-accent); stroke-width: 1.5; }
+    .d-h { font: 700 16px var(--__sl-font, system-ui); fill: var(--sl-color-white); }
+    .d-t { font: 600 13px var(--__sl-font-mono, ui-monospace, monospace); fill: var(--sl-color-white); }
+    .d-s { font: 500 12px var(--__sl-font, system-ui); fill: var(--sl-color-gray-3); }
+    .d-sm { font-size: 12px; }
+    .d-a { font: 600 12px var(--__sl-font-mono, ui-monospace, monospace); fill: var(--sl-color-accent-high); }
+    .d-line { stroke: var(--sl-color-accent); stroke-width: 2; fill: none; }
+    .d-back { stroke: var(--sl-color-accent); stroke-width: 2; fill: none; stroke-dasharray: 6 6; }
+    .d-tip { fill: var(--sl-color-accent); }
+    .d-flow { stroke-dasharray: 4 8; animation: d-flow 1.2s linear infinite; }
+    @keyframes d-flow { to { stroke-dashoffset: -24; } }
+    @media (prefers-reduced-motion: reduce) { .d-flow { animation: none; } }
+  </style>
+  <defs>
+    <marker id="arch-tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" class="d-tip" />
+    </marker>
+  </defs>
+
+  <!-- Screens -->
+  <rect x="16" y="52" width="210" height="236" rx="16" class="d-box" />
+  <text x="36" y="84" class="d-h">Screens</text>
+  <rect x="32" y="102" width="178" height="62" rx="10" class="d-card" />
+  <text x="46" y="128" class="d-t">TransactionsPage</text>
+  <text x="46" y="148" class="d-s">route store + starred</text>
+  <rect x="32" y="176" width="178" height="62" rx="10" class="d-card" />
+  <text x="46" y="202" class="d-t">StarredPage</text>
+  <text x="46" y="222" class="d-s">starred</text>
+  <text x="36" y="270" class="d-s">No state in constructors</text>
+
+  <!-- arrow: screens -> scope -->
+  <path d="M226 170 L296 170" class="d-line" marker-end="url(#arch-tip)" />
+  <text x="261" y="160" text-anchor="middle" class="d-a">store(key)</text>
+
+  <!-- StateScope -->
+  <rect x="300" y="32" width="270" height="276" rx="16" class="d-box" />
+  <text x="320" y="64" class="d-h">StateScope</text>
+  <text x="320" y="84" class="d-s">owns stores, closes them on dispose</text>
+  <rect x="316" y="102" width="238" height="54" rx="10" class="d-hl" />
+  <text x="330" y="125" class="d-t">AppState</text>
+  <text x="330" y="144" class="d-s">app-wide, kept alive</text>
+  <rect x="316" y="166" width="238" height="54" rx="10" class="d-card" />
+  <text x="330" y="189" class="d-t">AppState.grouped</text>
+  <text x="330" y="208" class="d-s">a group of routes (ShellRoute)</text>
+  <rect x="316" y="230" width="238" height="54" rx="10" class="d-card" />
+  <text x="330" y="253" class="d-t">createStore()</text>
+  <text x="330" y="272" class="d-s">one route, closed with it</text>
+
+  <!-- arrow: scope -> adapter -->
+  <path d="M570 170 L636 170" class="d-line" marker-end="url(#arch-tip)" />
+  <text x="603" y="160" text-anchor="middle" class="d-a">create()</text>
+
+  <!-- StateAdapter -->
+  <rect x="640" y="118" width="148" height="104" rx="16" class="d-hl" />
+  <text x="714" y="158" text-anchor="middle" class="d-h">StateAdapter</text>
+  <text x="714" y="182" text-anchor="middle" class="d-t">create&lt;S&gt;()</text>
+  <text x="714" y="202" text-anchor="middle" class="d-s">one per app</text>
+
+  <!-- native stores -->
+  <g>
+    <path d="M788 170 C810 170, 808 54, 816 54" class="d-line d-flow" />
+    <path d="M788 170 C810 170, 808 110, 816 110" class="d-line d-flow" />
+    <path d="M788 170 L816 166" class="d-line d-flow" />
+    <path d="M788 170 C810 170, 808 222, 816 222" class="d-line d-flow" />
+    <path d="M788 170 C810 170, 808 278, 816 278" class="d-line d-flow" />
+  </g>
+  <g>
+    <rect x="816" y="36" width="140" height="36" rx="18" class="d-card" /><circle cx="832" cy="54" r="6" fill="#6366f1" /><text x="844" y="58.5" class="d-t d-sm">Cubit&lt;S&gt;</text>
+    <rect x="816" y="92" width="140" height="36" rx="18" class="d-card" /><circle cx="832" cy="110" r="6" fill="#e0812f" /><text x="844" y="114.5" class="d-t d-sm">Rx&lt;S&gt;</text>
+    <rect x="816" y="148" width="140" height="36" rx="18" class="d-card" /><circle cx="832" cy="166" r="6" fill="#e2486f" /><text x="844" y="170.5" class="d-t d-sm">Observable&lt;S&gt;</text>
+    <rect x="816" y="204" width="140" height="36" rx="18" class="d-card" /><circle cx="832" cy="222" r="6" fill="#0ea5c6" /><text x="844" y="226.5" class="d-t d-sm">ChangeNotifier</text>
+    <rect x="816" y="260" width="140" height="36" rx="18" class="d-card" /><circle cx="832" cy="278" r="6" fill="#8b5cf6" /><text x="844" y="282.5" class="d-t d-sm">Notifier&lt;S&gt;</text>
+  </g>
+
+  <!-- rebuild path -->
+  <path d="M890 296 C890 344, 870 352, 836 352 L160 352 C130 352 121 340 121 296" class="d-back" marker-end="url(#arch-tip)" />
+  <rect x="356" y="338" width="276" height="28" rx="14" class="d-box" />
+  <text x="494" y="357" text-anchor="middle" class="d-a">watch / select: rebuild what changed</text>
+</svg>

@@ -1,0 +1,20 @@
+# Publishes one package when its tag is pushed, for example
+# `switchable_state-v0.2.0` or `switchable_state_riverpod-v0.2.0`.
+# Each package must have automated publishing enabled on its pub.dev admin
+# page first; see PUBLISHING.md.
+name: Publish to pub.dev
+
+on:
+  push:
+    tags:
+      - 'switchable_state-v[0-9]+.[0-9]+.[0-9]+*'
+      - 'switchable_state_*-v[0-9]+.[0-9]+.[0-9]+*'
+
+jobs:
+  publish:
+    permissions:
+      id-token: write # pub.dev authenticates the run with an OIDC token
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: packages/{package}
+      environment: pub.dev

@@ -1,0 +1,82 @@
+---
+title: Routes with go_router
+description: Put the scope above the router, share state across a ShellRoute, and know what go() and push() do to your stores.
+---
+
+import Diagram from '../../../components/Diagram.astro';
+import GoPush from '../../../assets/diagrams/go-push.svg';
+import { Aside } from '@astrojs/starlight/components';
+
+switchable_state works with any router. With go_router, three placements cover every lifetime.
+
+## The root scope
+
+Put the root `StateScope` above `MaterialApp.router`, so app-wide state outlives every route:
+
+```dart
+StateScope(
+  adapter: const CubitStateAdapter(),
+  child: MaterialApp.router(routerConfig: router),
+)
+```
+
+The [example app](https://github.com/EugenioTesio/switchable_state/tree/main/example) instead builds the root scope inside a `ShellRoute`, because the user picks the library at runtime: going back to the picker disposes that scope and every store in it, so the next library starts fresh.
+
+```dart
+ShellRoute(
+  builder: (context, state, child) => StateScope(
+    key: ObjectKey(option.adapter), // a new choice gets a new scope
+    adapter: services<StateAdapter>(),
+    child: child,
+  ),
+  routes: [/* /transactions, /starred */],
+)
+```
+
+## State for a group of routes
+
+Wrap the group's `ShellRoute` child in a `StateScope.group` that owns the grouped states:
+
+```dart
+final draftState = AppState<int>.grouped(() => 0, debugName: 'draft');
+
+final router = GoRouter(
+  routes: [
+    GoRoute(path: '/', builder: (context, state) => const HomePage()),
+    ShellRoute(
+      builder: (context, state, child) =>
+          StateScope.group(owns: [draftState], child: child),
+      routes: [
+        GoRoute(path: '/group/a', builder: (context, state) => const PageA()),
+        GoRoute(path: '/group/b', builder: (context, state) => const PageB()),
+      ],
+    ),
+  ],
+);
+```
+
+Moving between `/group/a` and `/group/b` keeps `draftState`. `go('/')` disposes the group and closes its store; returning to the group starts it over. Pages in the group still read app-wide states from the root. This scenario runs against all five adapters in the example's `route_group_scope_test.dart`.
+
+## go() versus push()
+
+<Diagram narrow caption="go() replaces the current route, so its route-owned store closes. push() keeps the covered route mounted, so its store survives and shows the latest state after pop().">
+	<GoPush />
+</Diagram>
+
+- **`go()` to a sibling route** removes the current route. A store it created with `createStore` closes, and a return visit builds a new one (in the example, Transactions loads again). App-wide stores are untouched.
+- **`push()`** keeps the route underneath mounted with `TickerMode` off. Its stores stay alive and the screen shows the latest state when it's uncovered.
+
+<Aside>
+Riverpod's `Consumer` stops listening while its route is hidden and replays the missed update when shown. Cubit, GetX, MobX and Provider keep rebuilding while hidden. Either way, the uncovered screen is up to date.
+</Aside>
+
+## Redirect until there is a scope
+
+If the scope depends on a runtime choice, redirect state-backed routes until it exists:
+
+```dart
+redirect: (context, state) =>
+    state.matchedLocation != '/' && !services.isRegistered<StateAdapter>()
+        ? '/'
+        : null,
+```

@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 700" role="img" aria-label="go() replaces the Transactions route, so its route store closes and a return visit loads again. push() keeps Transactions mounted underneath, so its store is kept and shows the latest state after pop. App-wide state survives both.">
+  <style>
+    .g-panel { fill: var(--sl-color-gray-6); stroke: var(--sl-color-gray-5); stroke-width: 1.5; }
+    .g-screen { fill: var(--sl-color-black); stroke: var(--sl-color-gray-4); stroke-width: 1.5; }
+    .g-ghost { fill: none; stroke: var(--sl-color-gray-4); stroke-width: 1.5; stroke-dasharray: 5 5; }
+    .g-under { fill: var(--sl-color-gray-5); stroke: var(--sl-color-gray-4); stroke-width: 1.5; }
+    .g-h { font: 700 17px var(--__sl-font-mono, ui-monospace, monospace); fill: var(--sl-color-white); }
+    .g-t { font: 600 14px var(--__sl-font, system-ui); fill: var(--sl-color-white); }
+    .g-m { font: 600 14px var(--__sl-font, system-ui); fill: var(--sl-color-gray-2); }
+    .g-s { font: 500 14px var(--__sl-font, system-ui); fill: var(--sl-color-gray-2); }
+    .g-ok { font: 650 14px var(--__sl-font, system-ui); fill: var(--sl-color-accent-high); }
+    .g-bad { font: 650 14px var(--__sl-font, system-ui); fill: #e2486f; }
+    .g-line { stroke: var(--sl-color-gray-4); stroke-width: 7; stroke-linecap: round; }
+    .g-arrow { stroke: var(--sl-color-accent); stroke-width: 2.4; fill: none; }
+    .g-tip { fill: var(--sl-color-accent); }
+  </style>
+  <defs>
+    <marker id="gp-tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" class="g-tip" />
+    </marker>
+    <g id="gp-rows">
+      <path d="M20 60 H100" class="g-line" />
+      <path d="M20 84 H86" class="g-line" />
+      <path d="M20 108 H94" class="g-line" />
+    </g>
+  </defs>
+
+  <!-- go() -->
+  <rect x="8" y="8" width="504" height="336" rx="18" class="g-panel" />
+  <text x="28" y="44" class="g-h">context.go('/starred')</text>
+
+  <g transform="translate(28 66)">
+    <rect width="120" height="176" rx="16" class="g-screen" />
+    <text x="16" y="32" class="g-t">Transactions</text>
+    <use href="#gp-rows" />
+  </g>
+  <path d="M160 154 H200" class="g-arrow" marker-end="url(#gp-tip)" />
+  <g transform="translate(212 66)">
+    <rect width="120" height="176" rx="16" class="g-ghost" />
+    <path d="M42 70 L78 106 M78 70 L42 106" stroke="#e2486f" stroke-width="3.4" stroke-linecap="round" />
+  </g>
+  <g transform="translate(348 66)">
+    <rect width="120" height="176" rx="16" class="g-screen" />
+    <text x="16" y="32" class="g-t">Starred</text>
+    <use href="#gp-rows" />
+  </g>
+  <text x="212" y="268" class="g-bad">Transactions is disposed:</text>
+  <text x="212" y="288" class="g-bad">its route store closes.</text>
+  <text x="28" y="314" class="g-s">Going back with go() builds a new store, which loads again.</text>
+  <text x="28" y="334" class="g-s">App-wide state is untouched.</text>
+
+  <!-- push() -->
+  <rect x="8" y="356" width="504" height="336" rx="18" class="g-panel" />
+  <text x="28" y="392" class="g-h">context.push('/starred')</text>
+
+  <g transform="translate(28 414)">
+    <rect width="120" height="176" rx="16" class="g-screen" />
+    <text x="16" y="32" class="g-t">Transactions</text>
+    <use href="#gp-rows" />
+  </g>
+  <path d="M160 502 H200" class="g-arrow" marker-end="url(#gp-tip)" />
+  <g transform="translate(212 430)">
+    <rect width="120" height="176" rx="16" class="g-under" />
+    <text x="16" y="32" class="g-m">Transactions</text>
+  </g>
+  <g transform="translate(268 406)">
+    <rect width="120" height="176" rx="16" class="g-screen" />
+    <text x="16" y="32" class="g-t">Starred</text>
+    <use href="#gp-rows" />
+  </g>
+  <path d="M398 470 C436 486, 436 548, 398 566" class="g-arrow" marker-end="url(#gp-tip)" />
+  <text x="436" y="524" class="g-ok">pop()</text>
+  <text x="28" y="628" class="g-ok">Transactions stays mounted: its store is kept.</text>
+  <text x="28" y="662" class="g-s">After pop() it shows the latest state without loading.</text>
+  <text x="28" y="682" class="g-s">Riverpod pauses hidden watchers; they catch up on pop.</text>
+</svg>

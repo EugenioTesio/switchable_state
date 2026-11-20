@@ -1,0 +1,100 @@
+---
+title: Getting started
+description: Install switchable_state, declare state, add a scope and read it from any widget.
+---
+
+import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+switchable_state gives every screen the same small API for state, whichever library runs underneath. You will need Flutter 3.47 or later (Dart 3.13 or later).
+
+<Steps>
+
+1. **Add the packages.** The contract lives in `switchable_state`; each library has its own adapter package.
+
+   <Tabs syncKey="adapter">
+   	<TabItem label="Riverpod">
+   		```sh
+   		flutter pub add switchable_state switchable_state_riverpod
+   		```
+   	</TabItem>
+   	<TabItem label="Cubit">
+   		```sh
+   		flutter pub add switchable_state switchable_state_bloc
+   		```
+   	</TabItem>
+   	<TabItem label="Provider">
+   		```sh
+   		flutter pub add switchable_state switchable_state_provider
+   		```
+   	</TabItem>
+   	<TabItem label="GetX">
+   		```sh
+   		flutter pub add switchable_state switchable_state_getx
+   		```
+   	</TabItem>
+   	<TabItem label="MobX">
+   		```sh
+   		flutter pub add switchable_state switchable_state_mobx
+   		```
+   	</TabItem>
+   </Tabs>
+
+2. **Declare your state once**, as a top-level `final`. The declaration is the key screens use to find the store, the way a Riverpod provider is.
+
+   ```dart
+   import 'package:switchable_state/switchable_state.dart';
+
+   final counterState = AppState<int>(() => 0, debugName: 'counter');
+   ```
+
+   Snapshots should be immutable. Use your own classes with `==` for anything bigger than a number.
+
+3. **Put a `StateScope` above your app** and give it the adapter. This is the only line that names a library.
+
+   ```dart
+   import 'package:material_ui/material_ui.dart';
+   import 'package:switchable_state_riverpod/switchable_state_riverpod.dart';
+
+   void main() {
+     runApp(
+       const StateScope(
+         adapter: RiverpodStateAdapter(),
+         child: MaterialApp(home: CounterPage()),
+       ),
+     );
+   }
+   ```
+
+4. **Read and write from any widget below it.** `StateScope.of(context).store(key)` returns the same store everywhere; `watch` rebuilds when it changes and `update` writes a new snapshot.
+
+   ```dart
+   class CounterPage extends StatelessWidget {
+     const CounterPage({super.key});
+
+     @override
+     Widget build(BuildContext context) {
+       final counter = StateScope.of(context).store(counterState);
+       return Scaffold(
+         body: Center(child: counter.watch((count) => Text('$count'))),
+         floatingActionButton: FloatingActionButton(
+           onPressed: () => counter.update((count) => count + 1),
+           child: const Icon(Icons.add),
+         ),
+       );
+     }
+   }
+   ```
+
+5. **Switch libraries** by replacing `RiverpodStateAdapter()` with `CubitStateAdapter()`, `GetXStateAdapter()`, `MobXStateAdapter()` or `ProviderStateAdapter()`, and its package. Nothing else changes.
+
+</Steps>
+
+<Aside type="tip" title="This snippet is tested">
+The counter above runs in the example's test suite on all five adapters, so it keeps compiling and behaving the same as the packages evolve.
+</Aside>
+
+## What to read next
+
+- [The contract](/switchable_state/concepts/contract/): every member of `StateStore` and what each adapter guarantees.
+- [Who owns a store](/switchable_state/concepts/ownership/): app-wide, route-group and route-owned state.
+- [Rebuilding with watch and select](/switchable_state/concepts/rebuilds/): rebuild only for the part of a snapshot a widget reads.

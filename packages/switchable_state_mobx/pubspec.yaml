@@ -1,0 +1,32 @@
+name: switchable_state_mobx
+description: >-
+  MobX adapter for switchable_state. Each store is an Observable changed inside
+  actions and rendered with Observer and Computed selectors.
+version: 0.1.0
+homepage: https://eugeniotesio.github.io/switchable_state/
+repository: https://github.com/EugenioTesio/switchable_state/tree/main/packages/switchable_state_mobx
+issue_tracker: https://github.com/EugenioTesio/switchable_state/issues
+documentation: https://eugeniotesio.github.io/switchable_state/adapters/mobx/
+topics:
+  - state-management
+  - mobx
+  - reactive-programming
+
+environment:
+  sdk: ^3.13.0
+  flutter: '>=3.47.0'
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_mobx: ^2.4.0
+  mobx: ^2.7.0
+  switchable_state: ^0.1.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  switchable_state_test: ^0.1.0

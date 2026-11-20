@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Analyze and test (Flutter ${{ matrix.flutter-version || 'latest stable' }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - flutter-version: '3.47.9' # the declared minimum
+          - flutter-version: '' # the latest stable, which pub.dev scores with
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ matrix.flutter-version }}
+          cache: true
+      - run: flutter pub get
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed packages example
+      - run: flutter analyze packages example
+      - name: Test every package and the example
+        run: |
+          for dir in packages/* example; do
+            echo "::group::$dir"
+            (cd "$dir" && flutter test --test-randomize-ordering-seed random) || exit 1
+            echo "::endgroup::"
+          done
+
+  lower-bounds:
+    name: Analyze with lowest dependency versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - run: flutter pub downgrade
+      - run: flutter analyze packages example
+
+  publish-dry-run:
+    name: Validate the packages for pub.dev
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: dart pub publish --dry-run
+        run: |
+          for dir in packages/*; do
+            echo "::group::$dir"
+            (cd "$dir" && dart pub publish --dry-run) || exit 1
+            echo "::endgroup::"
+          done

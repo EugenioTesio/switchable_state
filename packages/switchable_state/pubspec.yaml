@@ -1,0 +1,36 @@
+name: switchable_state
+description: >-
+  One state-management contract for Flutter, with scopes for app-wide, route-
+  group and route-owned stores. Swap Cubit, GetX, MobX, Provider or Riverpod
+  without touching screens.
+version: 0.1.0
+homepage: https://eugeniotesio.github.io/switchable_state/
+repository: https://github.com/EugenioTesio/switchable_state/tree/main/packages/switchable_state
+issue_tracker: https://github.com/EugenioTesio/switchable_state/issues
+documentation: https://eugeniotesio.github.io/switchable_state/getting-started/
+topics:
+  - state-management
+  - riverpod
+  - bloc
+  - mobx
+  - getx
+screenshots:
+  - description: The example app's start screen, where the user picks one of the five state-management libraries.
+    path: screenshots/choose.png
+  - description: The Transactions screen running on the chosen library, with starred rows shared app-wide.
+    path: screenshots/transactions.png
+
+environment:
+  sdk: ^3.13.0
+  flutter: '>=3.47.0'
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter

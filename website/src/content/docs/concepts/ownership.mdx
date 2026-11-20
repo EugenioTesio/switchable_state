@@ -1,0 +1,96 @@
+---
+title: Who owns a store
+description: App-wide, route-group and route-owned stores, and when each one is created and closed.
+---
+
+import Diagram from '../../../components/Diagram.astro';
+import Lifetimes from '../../../assets/diagrams/lifetimes.svg';
+import { Aside } from '@astrojs/starlight/components';
+
+Whether state survives a navigation is decided by **who owns its store**, not by a setting in each library. There are three owners.
+
+<Diagram caption="One navigation timeline. The app-wide store lives across every route; the grouped store lives while the user stays inside /checkout and starts fresh on return; each route-owned store lives only while its route is shown.">
+	<Lifetimes />
+</Diagram>
+
+| Declaration | Owner | Created | Closed | Similar to |
+| --- | --- | --- | --- | --- |
+| `AppState(...)` | The root `StateScope` | On first read | When the root scope is disposed | A keep-alive Riverpod provider, a `BlocProvider` above the app |
+| `AppState.grouped(...)` | The `StateScope.group` that lists it in `owns` | On first read inside the group | When the user leaves the group | A provider inside a go_router `ShellRoute` |
+| `createStore(...)` | One `State` using `StateStoreOwner` | In `initState` | After that `State`'s `dispose` | Riverpod `autoDispose`, `BlocProvider(create:)` |
+
+## App-wide state
+
+```dart
+final starredState = AppState<StarredState>(
+  () => const StarredState.initial(),
+  debugName: 'starred',
+);
+
+// Anywhere below the root scope, on any screen:
+final starred = StateScope.of(context).store(starredState);
+```
+
+Each declaration is its own key, so two `AppState<int>` declarations get two separate stores. That avoids provider's "one instance per type" limit.
+
+## State for a group of routes
+
+Declare it as grouped, and own it in a `StateScope.group`, typically in a go_router `ShellRoute` builder:
+
+```dart
+final draftState = AppState<Draft>.grouped(() => const Draft.empty());
+
+ShellRoute(
+  builder: (context, state, child) =>
+      StateScope.group(owns: [draftState], child: child),
+  routes: [/* /checkout/cart, /checkout/pay */],
+)
+```
+
+Pages inside the group share `draftState`. Leaving the group disposes the `StateScope.group` and closes its stores; coming back starts fresh. Reading a grouped state outside any group that owns it throws a `StateError`. App-wide states are still passed up to the root, so pages in a group read both.
+
+## State owned by one route
+
+A screen that owns its state creates the store in `initState`. `StateStoreOwner` closes it after the `State`'s own `dispose` body, so you can stop work that writes to it first:
+
+```dart
+final class _TransactionsPageState extends State<TransactionsPage>
+    with StateStoreOwner<TransactionsPage> {
+  late final StateStore<TransactionsState> _store;
+  late final TransactionsController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _store = createStore(const TransactionsState.initial());
+    _controller = TransactionsController(load: () => widget.load(), update: _store.update);
+    unawaited(_controller.refresh());
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose(); // stop writes first
+    super.dispose();       // then StateStoreOwner closes the store
+  }
+}
+```
+
+<Aside type="caution">
+Call `createStore` from `initState`, never from `build`: that would create a new store on every rebuild. It asserts in debug builds.
+</Aside>
+
+## Reading from initState
+
+`StateScope.of(context)` registers no rebuild dependency, so it is safe in `initState`. Widgets rebuild through [`watch` and `select`](/switchable_state/concepts/rebuilds/) instead.
+
+## Overrides
+
+Any scope can start a state from a different value. The root can override app-wide states; a group can override the states it owns. This is mostly for tests:
+
+```dart
+StateScope(
+  adapter: const CubitStateAdapter(),
+  overrides: [starredState.overrideWith(() => const StarredState.initial().toggled('Rent'))],
+  child: const MyApp(),
+)
+```

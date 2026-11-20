@@ -1,0 +1,56 @@
+---
+title: Rebuilding with watch and select
+description: Rebuild for the whole snapshot with watch, or for one part of it with select.
+---
+
+`watch` rebuilds whenever the snapshot changes. `select` rebuilds only when the value it picks changes, compared with `==`, like `BlocSelector`, provider's `Selector` or Riverpod's `provider.select`.
+
+```dart
+final starred = StateScope.of(context).store(starredState);
+
+// Rebuilds only when the count changes, not on every star.
+starred.select(
+  (state) => state.count,
+  (count) => Text('Starred ($count)'),
+);
+
+// Rebuilds only when this row's star flips.
+starred.select(
+  (state) => state.contains(description),
+  (isStarred) => Icon(isStarred ? Icons.star : Icons.star_border),
+);
+```
+
+## Rules for pick
+
+- **Keep it pure.** It may run on every change of the store.
+- **Return something with a meaningful `==`**: a number, a string, a bool or an immutable value class. Returning a new `List` on every call defeats the comparison.
+- **It may change between builds.** When a parent rebuilds with a different `pick`, for example a list row reused for another item, the new pick applies to the current snapshot straight away.
+
+## How each library does it
+
+| Adapter | `watch` | `select` |
+| --- | --- | --- |
+| Cubit | `BlocBuilder` | `BlocSelector` |
+| GetX | `Obx` | A widget listening to the `Rx`, rebuilding only when the pick changes (GetX has no selector widget) |
+| MobX | `Observer` | A `Computed` read inside an `Observer` |
+| Provider | `ChangeNotifierProvider.value` + `Consumer` | `Selector` comparing with `==` instead of its default deep equality |
+| Riverpod | `Consumer` | `ref.watch(provider.select(pick))` |
+
+## Combining stores
+
+Stores don't depend on each other. When a widget needs two, nest them; each one rebuilds only its own subtree:
+
+```dart
+transactions.watch(
+  (state) => ListView(
+    children: [
+      for (final entry in state.visibleEntries)
+        ListTile(
+          leading: StarButton(description: entry.description), // selects from starred
+          title: Text(entry.description),
+        ),
+    ],
+  ),
+);
+```

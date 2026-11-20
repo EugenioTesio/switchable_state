@@ -1,0 +1,129 @@
+---
+title: switchable_state
+description: One state-management contract for Flutter with five interchangeable libraries. Swap Cubit, GetX, MobX, Provider or Riverpod without touching your screens.
+template: splash
+hero:
+  title: One state contract. Five libraries.
+  tagline: Write your Flutter screens once against a small, tested contract, then run them on Cubit, GetX, MobX, Provider or Riverpod by changing a single line.
+  image:
+    light: ../../assets/hero-light.svg
+    dark: ../../assets/hero-dark.svg
+    alt: One StateStore contract wired to five interchangeable adapters, lighting up one after another.
+  actions:
+    - text: Get started
+      link: /switchable_state/getting-started/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/EugenioTesio/switchable_state
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import LibraryGallery from '../../components/LibraryGallery.astro';
+import Diagram from '../../components/Diagram.astro';
+import Architecture from '../../assets/diagrams/architecture.svg';
+import trio from '../../assets/screens/trio.webp';
+
+<div class="chips">
+	<a class="chip" style="--dot: var(--ss-cubit)" href="/switchable_state/adapters/bloc/">Cubit</a>
+	<a class="chip" style="--dot: var(--ss-getx)" href="/switchable_state/adapters/getx/">GetX</a>
+	<a class="chip" style="--dot: var(--ss-mobx)" href="/switchable_state/adapters/mobx/">MobX</a>
+	<a class="chip" style="--dot: var(--ss-provider)" href="/switchable_state/adapters/provider/">Provider</a>
+	<a class="chip" style="--dot: var(--ss-riverpod)" href="/switchable_state/adapters/riverpod/">Riverpod</a>
+</div>
+
+## Why switchable_state
+
+<CardGrid stagger>
+	<Card title="Screens read, never receive" icon="seti:pipeline">
+		Every widget gets its state from the nearest `StateScope` by a declared key. Nothing is passed
+		between screens through constructors.
+	</Card>
+	<Card title="Swap the library, keep the app" icon="random">
+		`StateScope(adapter: RiverpodStateAdapter())` becomes `CubitStateAdapter()`, and the whole app
+		runs on flutter_bloc. Same screens, same tests.
+	</Card>
+	<Card title="Lifetimes you can see" icon="seti:clock">
+		A store is app-wide, shared by a group of routes, or owned by one route. Its owner closes it, the
+		way Riverpod's `autoDispose` or `BlocProvider(create:)` do.
+	</Card>
+	<Card title="Proven by one test suite" icon="approve-check">
+		The same conformance suite runs against all five adapters, and you can run it against your own
+		with `switchable_state_test`.
+	</Card>
+</CardGrid>
+
+## Install
+
+Add the contract and the adapter for the library you use. Your app depends only on that library.
+
+<Tabs syncKey="adapter">
+	<TabItem label="Riverpod">
+		```sh
+		flutter pub add switchable_state switchable_state_riverpod
+		```
+	</TabItem>
+	<TabItem label="Cubit">
+		```sh
+		flutter pub add switchable_state switchable_state_bloc
+		```
+	</TabItem>
+	<TabItem label="Provider">
+		```sh
+		flutter pub add switchable_state switchable_state_provider
+		```
+	</TabItem>
+	<TabItem label="GetX">
+		```sh
+		flutter pub add switchable_state switchable_state_getx
+		```
+	</TabItem>
+	<TabItem label="MobX">
+		```sh
+		flutter pub add switchable_state switchable_state_mobx
+		```
+	</TabItem>
+</Tabs>
+
+```dart
+final counterState = AppState<int>(() => 0); // declared once
+
+void main() => runApp(
+  const StateScope(
+    adapter: RiverpodStateAdapter(), // the only line that names a library
+    child: MaterialApp(home: CounterPage()),
+  ),
+);
+
+// In any widget below the scope:
+final counter = StateScope.of(context).store(counterState);
+counter.watch((count) => Text('$count'));
+counter.update((count) => count + 1);
+```
+
+## See it running
+
+The [example app](https://github.com/EugenioTesio/switchable_state/tree/main/example) asks which library to use, injects that adapter and routes to a Transactions screen. Starred rows are app-wide state, shared with the Starred screen without passing anything between them.
+
+<Image src={trio} alt="Three phones: the library picker, the Transactions screen with two starred rows, and the Starred screen" class="showcase" widths={[700, 1400]} sizes="(max-width: 56rem) 100vw, 56rem" />
+
+The same screen, unchanged, on each library:
+
+<LibraryGallery />
+
+## How it fits together
+
+<Diagram caption="Screens ask the scope for a store by key. The scope creates it once with the registered adapter and closes it with its owner. watch and select rebuild only the widgets that read what changed.">
+	<Architecture />
+</Diagram>
+
+## Next steps
+
+<CardGrid>
+	<LinkCard title="Getting started" description="Declare state, add a scope, read and write from widgets." href="/switchable_state/getting-started/" />
+	<LinkCard title="Who owns a store" description="App-wide, route-group and route-owned stores, and when each one closes." href="/switchable_state/concepts/ownership/" />
+	<LinkCard title="Routes with go_router" description="ShellRoute groups, and what go() and push() do to your stores." href="/switchable_state/guides/go-router/" />
+	<LinkCard title="Compare the libraries" description="How Riverpod, flutter_bloc, provider, MobX and GetX keep state alive." href="/switchable_state/reference/comparison/" />
+</CardGrid>

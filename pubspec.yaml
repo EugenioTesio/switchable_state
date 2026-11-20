@@ -1,0 +1,16 @@
+name: switchable_state_workspace
+description: Workspace for the switchable_state packages, their example and tests.
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+workspace:
+  - packages/switchable_state
+  - packages/switchable_state_test
+  - packages/switchable_state_bloc
+  - packages/switchable_state_getx
+  - packages/switchable_state_mobx
+  - packages/switchable_state_provider
+  - packages/switchable_state_riverpod
+  - example

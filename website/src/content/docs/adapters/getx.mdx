@@ -1,0 +1,54 @@
+---
+title: GetX
+description: The GetX adapter for switchable_state, backed by get 4.7.
+---
+
+import { Image } from 'astro:assets';
+import shot from '../../../assets/screens/transactions_getx.webp';
+
+<div class="split">
+<div>
+
+[`switchable_state_getx`](https://pub.dev/packages/switchable_state_getx) runs switchable_state on [get](https://pub.dev/packages/get) 4.7.
+
+Each store is an `Rx<S>`. `watch` uses `Obx`; `select` is a small widget that listens to the `Rx` and rebuilds only when the picked value changes, because GetX has no selector widget.
+
+</div>
+<Image src={shot} alt="The example's Transactions screen running on GetX" widths={[224, 448]} sizes="14rem" />
+</div>
+
+```sh
+flutter pub add switchable_state switchable_state_getx
+```
+
+```dart
+import 'package:switchable_state/switchable_state.dart';
+import 'package:switchable_state_getx/switchable_state_getx.dart';
+
+void main() {
+  runApp(
+    const StateScope(
+      adapter: GetXStateAdapter(),
+      child: MyApp(),
+    ),
+  );
+}
+```
+
+## How it maps to get
+
+| Contract | get |
+| --- | --- |
+| Store | An `Rx<S>` |
+| `replace` | `rx.value = next` |
+| `watch` | `Obx` |
+| `select` | `Rx.listen` + `setState` when the pick changes |
+| `close` | `Rx.close()`, guarded so a second call does nothing |
+
+## Things to know
+
+- **No `GetMaterialApp`, any router.** The adapter only uses `Rx` and `Obx`, so it works with `MaterialApp.router` and go_router.
+- **The scope decides lifetimes.** GetX bindings and smart management only dispose dependencies for routes GetX builds itself. Here the owning `StateScope` closes the store, so lifetimes match the other adapters.
+- **Writes after close fail loudly.** A closed `Rx` silently ignores writes; this adapter throws the same `StateError` as every other adapter.
+
+This adapter passes the shared [conformance suite](/switchable_state/guides/custom-adapter/#what-the-suite-checks), like the other four. [API reference](https://pub.dev/documentation/switchable_state_getx/latest/)

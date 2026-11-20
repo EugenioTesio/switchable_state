@@ -1,0 +1,89 @@
+---
+title: Write your own adapter
+description: Implement StateAdapter for another library and prove it with the conformance suite.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+An adapter is a stateless class with one method. Its stores implement the six members of [the contract](/switchable_state/concepts/contract/). The `switchable_state_test` package checks the result against the same suite the five official adapters pass.
+
+<Steps>
+
+1. **Add the test package.**
+
+   ```sh
+   flutter pub add --dev switchable_state_test
+   ```
+
+2. **Implement `StateAdapter` and `StateStore`.** This adapter uses nothing but Flutter's `ValueNotifier`:
+
+   ```dart
+   final class ValueNotifierStateAdapter implements StateAdapter {
+     const ValueNotifierStateAdapter();
+
+     @override
+     StateStore<S> create<S extends Object>(S initial) =>
+         _ValueNotifierStore<S>(initial);
+   }
+
+   final class _ValueNotifierStore<S extends Object> implements StateStore<S> {
+     _ValueNotifierStore(S initial) : _notifier = ValueNotifier<S>(initial);
+
+     final ValueNotifier<S> _notifier;
+     bool _closed = false;
+
+     @override
+     S get value => _notifier.value;
+
+     @override
+     void replace(S next) {
+       if (_closed) throw closedStoreError(); // the same error on every adapter
+       _notifier.value = next;
+     }
+
+     @override
+     Widget watch(Widget Function(S state) render) => ValueListenableBuilder<S>(
+       valueListenable: _notifier,
+       builder: (context, state, _) => render(state),
+     );
+
+     @override
+     Widget select<R>(R Function(S state) pick, Widget Function(R value) render) =>
+         _Select<S, R>(notifier: _notifier, pick: pick, render: render);
+
+     @override
+     Future<void> close() async {
+       if (_closed) return; // later calls do nothing
+       _closed = true;
+       _notifier.dispose();
+     }
+   }
+   ```
+
+   `_Select` is a small `StatefulWidget` that listens to the notifier and calls `setState` only when `pick(notifier.value)` changes. In `build` it picks from the live value, so a new `pick` from a parent rebuild applies at once. The complete file is [value_notifier_adapter_test.dart](https://github.com/EugenioTesio/switchable_state/blob/main/packages/switchable_state_test/test/value_notifier_adapter_test.dart).
+
+3. **Run the contract.**
+
+   ```dart
+   import 'package:switchable_state_test/switchable_state_test.dart';
+
+   void main() => stateStoreContract(const ValueNotifierStateAdapter());
+   ```
+
+   ```sh
+   flutter test
+   ```
+
+</Steps>
+
+## What the suite checks
+
+- **value:** the initial snapshot, immediate writes, `update` against the latest snapshot, independent stores, and object identity.
+- **watch:** rendering on mount, several watchers, no rebuilds from unrelated stores, a new `render` after a parent rebuild, remounting.
+- **select:** rebuilds only when the pick changes (render calls are counted), a new `pick` after a parent rebuild, nesting inside another store's watcher.
+- **Hidden routes:** watchers under `TickerMode(enabled: false)` catch up once shown.
+- **close:** the last snapshot is kept, `replace` throws a `StateError`, and a second `close` does nothing.
+
+<Aside>
+If your library stops listening while a route is hidden, as Riverpod does, pass `pausesHiddenWatchers: true`. The suite then expects the old value while hidden and the new one once shown.
+</Aside>

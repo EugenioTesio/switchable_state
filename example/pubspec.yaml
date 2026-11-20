@@ -1,0 +1,34 @@
+name: switchable_state_example
+description: >-
+  Transactions demo that lets the user pick a state-management library at
+  startup and injects its adapter from the switchable_state packages.
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.0
+  flutter: '>=3.47.0'
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  get_it: ^9.3.0
+  go_router: ^18.1.4
+  material_ui: ^1.11.1
+  switchable_state: ^0.1.0
+  switchable_state_bloc: ^0.1.0
+  switchable_state_getx: ^0.1.0
+  switchable_state_mobx: ^0.1.0
+  switchable_state_provider: ^0.1.0
+  switchable_state_riverpod: ^0.1.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_riverpod: ^3.5.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,31 @@
+name: switchable_state_bloc
+description: >-
+  flutter_bloc adapter for switchable_state. Each store is a Cubit, rendered
+  with BlocBuilder and BlocSelector.
+version: 0.1.0
+homepage: https://eugeniotesio.github.io/switchable_state/
+repository: https://github.com/EugenioTesio/switchable_state/tree/main/packages/switchable_state_bloc
+issue_tracker: https://github.com/EugenioTesio/switchable_state/issues
+documentation: https://eugeniotesio.github.io/switchable_state/adapters/bloc/
+topics:
+  - state-management
+  - bloc
+  - cubit
+
+environment:
+  sdk: ^3.13.0
+  flutter: '>=3.47.0'
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_bloc: ^9.1.1
+  switchable_state: ^0.1.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  switchable_state_test: ^0.1.0

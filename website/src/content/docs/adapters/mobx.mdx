@@ -1,0 +1,54 @@
+---
+title: MobX
+description: The MobX adapter for switchable_state, backed by mobx 2.7.
+---
+
+import { Image } from 'astro:assets';
+import shot from '../../../assets/screens/transactions_mobx.webp';
+
+<div class="split">
+<div>
+
+[`switchable_state_mobx`](https://pub.dev/packages/switchable_state_mobx) runs switchable_state on [mobx](https://pub.dev/packages/mobx) 2.7 and [flutter_mobx](https://pub.dev/packages/flutter_mobx) 2.4.
+
+Each store is an `Observable<S>` changed inside `runInAction`. `watch` uses an `Observer`; `select` reads a `Computed` inside one, so it recalculates only the picked part.
+
+</div>
+<Image src={shot} alt="The example's Transactions screen running on MobX" widths={[224, 448]} sizes="14rem" />
+</div>
+
+```sh
+flutter pub add switchable_state switchable_state_mobx
+```
+
+```dart
+import 'package:switchable_state/switchable_state.dart';
+import 'package:switchable_state_mobx/switchable_state_mobx.dart';
+
+void main() {
+  runApp(
+    const StateScope(
+      adapter: MobXStateAdapter(),
+      child: MyApp(),
+    ),
+  );
+}
+```
+
+## How it maps to mobx
+
+| Contract | mobx |
+| --- | --- |
+| Store | An `Observable<S>` |
+| `replace` | `runInAction(() => observable.value = next)` |
+| `watch` | `Observer` |
+| `select` | A `Computed` read inside an `Observer`, recreated when the pick changes |
+| `close` | Stops accepting writes |
+
+## Things to know
+
+- **Strict mode friendly.** Every write runs inside an action, so the strictest MobX write policy accepts it.
+- **No code generation.** The snapshot is a single observable value, so there is no `mobx_codegen` step.
+- **Fine-grained where it counts.** `select` uses a `Computed`, so a widget re-renders only when its derived value changes.
+
+This adapter passes the shared [conformance suite](/switchable_state/guides/custom-adapter/#what-the-suite-checks), like the other four. [API reference](https://pub.dev/documentation/switchable_state_mobx/latest/)

@@ -1,0 +1,54 @@
+---
+title: Riverpod
+description: The Riverpod adapter for switchable_state, backed by flutter_riverpod 3.5.
+---
+
+import { Image } from 'astro:assets';
+import shot from '../../../assets/screens/transactions_riverpod.webp';
+
+<div class="split">
+<div>
+
+[`switchable_state_riverpod`](https://pub.dev/packages/switchable_state_riverpod) runs switchable_state on [flutter_riverpod](https://pub.dev/packages/flutter_riverpod) 3.5.
+
+Each store owns a `ProviderContainer` holding one `Notifier<S>`. Every widget that watches the store shares that container through an `UncontrolledProviderScope`, so your app needs no `ProviderScope`.
+
+</div>
+<Image src={shot} alt="The example's Transactions screen running on Riverpod" widths={[224, 448]} sizes="14rem" />
+</div>
+
+```sh
+flutter pub add switchable_state switchable_state_riverpod
+```
+
+```dart
+import 'package:switchable_state/switchable_state.dart';
+import 'package:switchable_state_riverpod/switchable_state_riverpod.dart';
+
+void main() {
+  runApp(
+    const StateScope(
+      adapter: RiverpodStateAdapter(),
+      child: MyApp(),
+    ),
+  );
+}
+```
+
+## How it maps to flutter_riverpod
+
+| Contract | flutter_riverpod |
+| --- | --- |
+| Store | A `Notifier<S>` in a store-owned `ProviderContainer` |
+| `replace` | Sets the notifier's `state` |
+| `watch` | `Consumer` + `ref.watch(provider)` |
+| `select` | `ref.watch(provider.select(pick))` |
+| `close` | `ProviderContainer.dispose()`, keeping the last snapshot |
+
+## Things to know
+
+- **Hidden routes pause.** A `Consumer` under a route covered by `push()` stops listening while `TickerMode` is off and replays the missed update when shown. The other adapters keep rebuilding while hidden; both show the latest state.
+- **No `ProviderScope` needed.** Each store brings its own container, so adding this adapter doesn't change your widget tree.
+- **Not listed as web compatible.** flutter_riverpod 3.5 depends on `flutter_test`, so pub.dev doesn't mark it, or this adapter, as web compatible.
+
+This adapter passes the shared [conformance suite](/switchable_state/guides/custom-adapter/#what-the-suite-checks), like the other four. [API reference](https://pub.dev/documentation/switchable_state_riverpod/latest/)
