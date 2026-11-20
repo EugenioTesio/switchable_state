@@ -66,6 +66,7 @@ export default defineConfig({
 					label: 'Reference',
 					items: [
 						{ label: 'Comparison with the five libraries', slug: 'reference/comparison' },
+						{ label: 'Packages on pub.dev', link: 'https://pub.dev/packages?q=switchable_state', attrs: { target: '_blank' } },
 						{ label: 'API reference', link: 'https://pub.dev/documentation/switchable_state/latest/', attrs: { target: '_blank' } },
 						{ label: 'Changelog', link: `${repo}/blob/main/packages/switchable_state/CHANGELOG.md`, attrs: { target: '_blank' } },
 					],

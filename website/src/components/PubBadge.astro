@@ -1,0 +1,11 @@
+---
+// A pub.dev version badge linking to the package page.
+interface Props {
+	pkg: string;
+}
+const { pkg } = Astro.props;
+---
+
+<a class="pub-badge" href={`https://pub.dev/packages/${pkg}`} title={`${pkg} on pub.dev`}>
+	<img src={`https://img.shields.io/pub/v/${pkg}.svg?label=pub.dev`} alt={`${pkg} on pub.dev`} height="20" loading="lazy" />
+</a>

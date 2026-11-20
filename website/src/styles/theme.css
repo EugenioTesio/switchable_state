@@ -155,3 +155,17 @@
 	gap: 0.5rem;
 	justify-content: center;
 }
+
+/* pub.dev version badges. */
+.pub-badge {
+	display: inline-flex;
+	vertical-align: middle;
+	text-decoration: none;
+}
+.sl-markdown-content .pub-badge img,
+.pub-badge img {
+	display: block;
+	width: auto;
+	height: 20px;
+	margin: 0;
+}

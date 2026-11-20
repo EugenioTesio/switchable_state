@@ -13,7 +13,11 @@ hero:
     - text: Get started
       link: ./getting-started/
       icon: right-arrow
-    - text: View on GitHub
+    - text: View on pub.dev
+      link: https://pub.dev/packages/switchable_state
+      icon: external
+      variant: secondary
+    - text: GitHub
       link: https://github.com/EugenioTesio/switchable_state
       icon: github
       variant: minimal
@@ -21,6 +25,7 @@ hero:
 
 import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 import AdapterTabs from '../../components/AdapterTabs.astro';
+import PubBadge from '../../components/PubBadge.astro';
 import { Image } from 'astro:assets';
 import LibraryGallery from '../../components/LibraryGallery.astro';
 import Diagram from '../../components/Diagram.astro';
@@ -61,6 +66,20 @@ import trio from '../../assets/screens/trio.webp';
 Add the contract and the adapter for the library you use. Your app depends only on that library.
 
 <AdapterTabs variant="quickstart" />
+
+## Packages on pub.dev
+
+All seven packages are published on [pub.dev](https://pub.dev/packages?q=switchable_state), with API references generated from their doc comments.
+
+| Package | What it contains | Version |
+| --- | --- | --- |
+| [switchable_state](https://pub.dev/packages/switchable_state) | `StateAdapter`, `StateStore`, `StateScope`, `AppState`, `StateStoreOwner` | <PubBadge pkg="switchable_state" /> |
+| [switchable_state_bloc](https://pub.dev/packages/switchable_state_bloc) | `CubitStateAdapter` (flutter_bloc) | <PubBadge pkg="switchable_state_bloc" /> |
+| [switchable_state_getx](https://pub.dev/packages/switchable_state_getx) | `GetXStateAdapter` (get) | <PubBadge pkg="switchable_state_getx" /> |
+| [switchable_state_mobx](https://pub.dev/packages/switchable_state_mobx) | `MobXStateAdapter` (mobx, flutter_mobx) | <PubBadge pkg="switchable_state_mobx" /> |
+| [switchable_state_provider](https://pub.dev/packages/switchable_state_provider) | `ProviderStateAdapter` (provider) | <PubBadge pkg="switchable_state_provider" /> |
+| [switchable_state_riverpod](https://pub.dev/packages/switchable_state_riverpod) | `RiverpodStateAdapter` (flutter_riverpod) | <PubBadge pkg="switchable_state_riverpod" /> |
+| [switchable_state_test](https://pub.dev/packages/switchable_state_test) | `stateStoreContract`, the conformance suite for adapters | <PubBadge pkg="switchable_state_test" /> |
 
 ## See it running
 
