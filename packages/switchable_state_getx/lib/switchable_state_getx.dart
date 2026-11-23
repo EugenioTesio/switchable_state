@@ -1,6 +1,6 @@
 /// A `switchable_state` adapter backed by `package:get`.
 ///
-/// Register [GetXStateAdapter] in the root `StateScope`:
+/// Register [GetXStateAdapter] in the root [StateScope]:
 ///
 /// ```dart
 /// StateScope(
@@ -12,27 +12,29 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart'
+    show DiagnosticPropertiesBuilder, ObjectFlagProperty;
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart' show Obx, Rx;
-
 import 'package:switchable_state/switchable_state.dart';
 
 /// A [StateAdapter] backed by GetX.
 ///
-/// Each store is an `Rx` value. [StateStore.watch] uses `Obx`, and
+/// Each store is an [Rx] value. [StateStore.watch] uses [Obx], and
 /// [StateStore.select] rebuilds only when the picked value changes, which
 /// GetX has no widget for. It needs no `GetMaterialApp` and works with any
 /// router; the owning scope, not GetX bindings, decides when a store closes.
 final class GetXStateAdapter implements StateAdapter {
-  /// Creates the adapter. It is stateless, so one const instance serves the
-  /// whole app.
+  /// Creates the adapter.
+  ///
+  /// It is stateless, so one `const` instance serves the whole app.
   const GetXStateAdapter();
 
   @override
-  StateStore<S> create<S extends Object>(S initial) => _GetXStore<S>(initial);
+  StateStore<S> create<S>(S initial) => _GetXStore<S>(initial);
 }
 
-final class _GetXStore<S extends Object> implements StateStore<S> {
+final class _GetXStore<S> implements StateStore<S> {
   _GetXStore(S initial) : _value = initial, _state = Rx<S>(initial);
 
   S _value;
@@ -43,6 +45,9 @@ final class _GetXStore<S extends Object> implements StateStore<S> {
   // another store's Obx does not register a reactive dependency on this store.
   @override
   S get value => _value;
+
+  @override
+  bool get isClosed => _closed;
 
   // A closed Rx silently ignores writes, so reject them explicitly.
   @override
@@ -61,6 +66,26 @@ final class _GetXStore<S extends Object> implements StateStore<S> {
   Widget select<R>(R Function(S) pick, Widget Function(R) render) =>
       _GetXSelect<S, R>(store: this, pick: pick, render: render);
 
+  @override
+  VoidCallback listen(void Function(S previous, S current) onChange) {
+    if (_closed || _state.subject.isClosed) return () {};
+    var previous = _value;
+    var canceled = false;
+    final subscription = _state.listen((next) {
+      if (canceled || _closed) return;
+      final prev = previous;
+      previous = next;
+      onChange(prev, next);
+    });
+    return () {
+      if (canceled) return;
+      canceled = true;
+      if (!_state.subject.isClosed) {
+        unawaited(subscription.cancel());
+      }
+    };
+  }
+
   // Rx.close asserts when called twice.
   @override
   Future<void> close() async {
@@ -73,7 +98,7 @@ final class _GetXStore<S extends Object> implements StateStore<S> {
 /// Wraps [Obx] keyed by [state] inside its own widget so multiple watchers of
 /// the same store can be siblings without duplicate keys, while swapping to a
 /// different store in the same slot still disposes the old [Obx] state.
-final class _GetXWatch<S extends Object> extends StatelessWidget {
+final class _GetXWatch<S> extends StatelessWidget {
   const _GetXWatch({required this.state, required this.render});
 
   final Rx<S> state;
@@ -86,7 +111,7 @@ final class _GetXWatch<S extends Object> extends StatelessWidget {
 
 /// GetX has no selector widget: Obx rebuilds on every change of the Rx it
 /// reads. This listens to the Rx and rebuilds only when the pick changes.
-final class _GetXSelect<S extends Object, R> extends StatefulWidget {
+final class _GetXSelect<S, R> extends StatefulWidget {
   const _GetXSelect({
     required this.store,
     required this.pick,
@@ -99,10 +124,17 @@ final class _GetXSelect<S extends Object, R> extends StatefulWidget {
 
   @override
   State<_GetXSelect<S, R>> createState() => _GetXSelectState<S, R>();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(ObjectFlagProperty<Function>.has('pick', pick))
+      ..add(ObjectFlagProperty<Function>.has('render', render));
+  }
 }
 
-final class _GetXSelectState<S extends Object, R>
-    extends State<_GetXSelect<S, R>> {
+final class _GetXSelectState<S, R> extends State<_GetXSelect<S, R>> {
   StreamSubscription<S>? _subscription;
   late R _picked;
 

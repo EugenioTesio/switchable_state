@@ -34,23 +34,68 @@ void main() {
       expect(store.replaced, isEmpty);
       expect(store.value, same(current));
     });
+
+    test('throws StateError before running change on a closed store', () async {
+      final store = _RecordingStore<int>(1);
+      await store.close();
+      var ran = false;
+      expect(
+        () => store.update((n) {
+          ran = true;
+          return n;
+        }),
+        throwsStateError,
+      );
+      expect(ran, isFalse);
+    });
   });
 
   test('closedStoreError is a StateError', () {
     expect(closedStoreError(), isA<StateError>());
   });
+
+  group('ValueNotifierStateAdapter', () {
+    testWidgets('supports watch, select, listen, and nullable state', (
+      tester,
+    ) async {
+      const adapter = ValueNotifierStateAdapter();
+      final store = adapter.create<String?>(null);
+      addTearDown(store.close);
+
+      final events = <(String?, String?)>[];
+      final cancel = store.listen((p, n) => events.add((p, n)));
+      addTearDown(cancel);
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: store.watch((s) => Text(s ?? 'empty')),
+        ),
+      );
+      expect(find.text('empty'), findsOneWidget);
+
+      store.replace('ready');
+      await tester.pump();
+      expect(find.text('ready'), findsOneWidget);
+      expect(events, [(null, 'ready')]);
+    });
+  });
 }
 
-final class _RecordingStore<S extends Object> implements StateStore<S> {
+final class _RecordingStore<S> implements StateStore<S> {
   _RecordingStore(this.value);
 
   @override
   S value;
 
+  @override
+  bool isClosed = false;
+
   final replaced = <S>[];
 
   @override
   void replace(S next) {
+    if (isClosed) throw closedStoreError();
     replaced.add(next);
     value = next;
   }
@@ -63,5 +108,10 @@ final class _RecordingStore<S extends Object> implements StateStore<S> {
       render(pick(value));
 
   @override
-  Future<void> close() async {}
+  VoidCallback listen(void Function(S previous, S current) onChange) => () {};
+
+  @override
+  Future<void> close() async {
+    isClosed = true;
+  }
 }

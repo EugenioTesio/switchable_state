@@ -10,44 +10,82 @@ import 'package:flutter/widgets.dart';
 
 import 'state_adapter.dart';
 
+/// Observes lifecycle events and snapshot transitions across stores owned by a
+/// [StateScope] hierarchy.
+///
+/// Register observers on the root [StateScope] to add logging, analytics, or
+/// diagnostics independently of which [StateAdapter] is active.
+abstract base class StateObserver {
+  /// Creates a [StateObserver].
+  const StateObserver();
+
+  /// Called when a [StateScope] lazily creates [store] for [state].
+  void onCreate(AppState<Object?> state, StateStore<Object?> store) {}
+
+  /// Called whenever the store for [state] transitions from [previous] to
+  /// [next].
+  void onChange(AppState<Object?> state, Object? previous, Object? next) {}
+
+  /// Called when a [StateScope] closes the store for [state].
+  void onClose(AppState<Object?> state) {}
+}
+
 /// Declares a piece of state that screens read from the nearest
 /// [StateScope], the way a Riverpod provider is declared once and read
 /// through `ref`.
 ///
 /// Declare it once as a top-level `final`. Each declaration is its own key,
 /// so two declarations of the same type get separate stores.
-final class AppState<S extends Object> {
-  /// App-wide state. The root [StateScope] creates its store on first read
-  /// and keeps it alive until the scope is disposed, like a keep-alive
-  /// provider.
+final class AppState<S> {
+  /// Creates an app-wide state declaration.
+  ///
+  /// The root [StateScope] creates its store on first read and keeps it alive
+  /// until the scope is disposed, like a keep-alive provider.
   AppState(this._initial, {this.debugName}) : grouped = false;
 
-  /// State shared by a group of routes. Only a [StateScope.group] that lists
-  /// it in `owns` creates its store, which closes with that scope. Reading it
-  /// anywhere else throws a [StateError].
+  /// Creates a grouped state declaration shared by a group of routes.
+  ///
+  /// Only a [StateScope.group] that lists it in [StateScope.owns] creates its
+  /// store, which closes with that scope. Reading it anywhere else throws a
+  /// [StateError].
   AppState.grouped(this._initial, {this.debugName}) : grouped = true;
 
   final S Function() _initial;
 
-  /// A name for error messages.
+  /// A name for error messages and diagnostics.
   final String? debugName;
 
   /// Whether a [StateScope.group] must own this state.
   final bool grouped;
 
   /// Seeds this state's store with [initial] in the scope that owns it,
-  /// usually in tests. See [StateScope.overrides].
+  /// usually in tests.
+  ///
+  /// See [StateScope.overrides].
   StateOverride<S> overrideWith(S Function() initial) =>
-      StateOverride._(this, initial);
+      StateOverride._initial(this, initial);
+
+  /// Replaces this state's store instance with the store returned by [create]
+  /// in the scope that owns it, usually for fakes or spies in tests.
+  ///
+  /// The scope takes ownership of the returned store and closes it when the
+  /// scope is disposed or reset. See [StateScope.overrides].
+  StateOverride<S> overrideWithStore(StateStore<S> Function() create) =>
+      StateOverride._store(this, create);
 
   /// Creates the backing store using this declaration's reified type [S],
   /// avoiding covariance mismatches when read through a wider type argument.
   StateStore<S> _createStore(
     StateAdapter adapter,
-    Object Function()? override,
+    StateOverride<Object?>? override,
   ) {
-    final initial = override != null ? override() as S : _initial();
-    return adapter.create<S>(initial);
+    if (override != null) {
+      final storeFactory = override._storeFactory;
+      if (storeFactory != null) return storeFactory() as StateStore<S>;
+      final initialFactory = override._initialFactory!;
+      return adapter.create<S>(initialFactory() as S);
+    }
+    return adapter.create<S>(_initial());
   }
 
   @override
@@ -55,26 +93,69 @@ final class AppState<S extends Object> {
       'AppState<$S>(${debugName ?? identityHashCode(this).toRadixString(16)})';
 }
 
-/// Replaces an [AppState]'s initial value in one [StateScope].
-final class StateOverride<S extends Object> {
-  const StateOverride._(this.state, this._initial);
+/// Declares a family of parameterized [AppState] keys indexed by [Arg].
+///
+/// Calling `family(arg)` returns the same [AppState] instance for equal [Arg]
+/// values, so screens reading the same parameter share the same store within
+/// the owning [StateScope].
+final class StateFamily<S, Arg> {
+  /// Creates an app-wide family of states initialized with [_initial].
+  StateFamily(this._initial, {this.debugName}) : grouped = false;
+
+  /// Creates a grouped family of states initialized with [_initial].
+  StateFamily.grouped(this._initial, {this.debugName}) : grouped = true;
+
+  final S Function(Arg arg) _initial;
+
+  /// An optional prefix for each member's [AppState.debugName].
+  final String? debugName;
+
+  /// Whether each member is created as [AppState.grouped].
+  final bool grouped;
+
+  final Map<Arg, AppState<S>> _cache = {};
+
+  /// Returns the [AppState] key for [arg], creating and caching it on first
+  /// access.
+  AppState<S> call(Arg arg) => _cache.putIfAbsent(arg, () {
+    final name = debugName != null ? '$debugName($arg)' : null;
+    return grouped
+        ? AppState<S>.grouped(() => _initial(arg), debugName: name)
+        : AppState<S>(() => _initial(arg), debugName: name);
+  });
+}
+
+/// Replaces an [AppState]'s initial value or store factory in one [StateScope].
+final class StateOverride<S> {
+  const StateOverride._initial(this.state, S Function() initial)
+    : _initialFactory = initial,
+      _storeFactory = null;
+
+  const StateOverride._store(this.state, StateStore<S> Function() create)
+    : _initialFactory = null,
+      _storeFactory = create;
 
   /// The overridden declaration.
   final AppState<S> state;
 
-  final S Function() _initial;
+  final S Function()? _initialFactory;
+  final StateStore<S> Function()? _storeFactory;
 }
 
-/// The stores that one [StateScope] provides. Get it with [StateScope.of].
+/// Holds the stores that one [StateScope] provides.
+///
+/// Retrieve the nearest registry with [StateScope.of] or [StateScope.maybeOf].
 final class StateRegistry {
   StateRegistry._(
     this.adapter,
     this._parent,
     this._owns,
-    List<StateOverride<Object>> overrides,
+    List<StateOverride<Object?>> overrides,
+    List<StateObserver> observers,
   ) : _overrides = {
-        for (final override in overrides) override.state: override._initial,
-      };
+        for (final override in overrides) override.state: override,
+      },
+      _observers = List.unmodifiable(observers);
 
   /// The adapter that creates this registry's stores.
   final StateAdapter adapter;
@@ -83,22 +164,28 @@ final class StateRegistry {
 
   /// The grouped states a [StateScope.group] owns. Null for the root, which
   /// owns every app-wide state.
-  final Set<AppState<Object>>? _owns;
+  final Set<AppState<Object?>>? _owns;
 
-  final Map<AppState<Object>, Object Function()> _overrides;
-  final Map<AppState<Object>, StateStore<Object>> _stores = {};
-  final Set<AppState<Object>> _creating = {};
+  final Map<AppState<Object?>, StateOverride<Object?>> _overrides;
+  final List<StateObserver> _observers;
+  final Map<AppState<Object?>, StateStore<Object?>> _stores = {};
+  final Map<AppState<Object?>, VoidCallback> _observerDisposers = {};
+  final Set<AppState<Object?>> _creating = {};
   bool _closed = false;
 
-  bool _isOwner(AppState<Object> state) => switch (_owns) {
+  /// Whether this registry has been closed by its owning [StateScope].
+  bool get isClosed => _closed;
+
+  bool _isOwner(AppState<Object?> state) => switch (_owns) {
     null => !state.grouped,
     final owns => owns.contains(state),
   };
 
-  /// The store for [state], shared by every widget under the scope that owns
-  /// it. It is created on first read and lives until that scope is disposed,
-  /// so screens never pass it to each other.
-  StateStore<S> store<S extends Object>(AppState<S> state) {
+  /// Returns the shared store for [state] under the scope that owns it.
+  ///
+  /// The store is created lazily on first read and lives until its owning
+  /// scope is disposed or [reset] is called.
+  StateStore<S> store<S>(AppState<S> state) {
     if (_isOwner(state)) {
       if (_closed) {
         throw StateError('$state was read after its StateScope was disposed.');
@@ -113,6 +200,7 @@ final class StateRegistry {
       try {
         final created = state._createStore(adapter, _overrides[state]);
         _stores[state] = created;
+        _attachObservers(state, created);
         return created;
       } finally {
         _creating.remove(state);
@@ -125,24 +213,69 @@ final class StateRegistry {
     );
   }
 
-  /// A new store that the caller owns and must close, like a Riverpod
-  /// `autoDispose` provider. A [State] can use [StateStoreOwner.createStore]
-  /// to have it closed automatically.
-  StateStore<S> create<S extends Object>(S initial) {
+  /// Creates a new store owned by the caller, who must close it.
+  ///
+  /// A [State] can mix in [StateStoreOwner] and call
+  /// [StateStoreOwner.createStore] to have it closed automatically.
+  StateStore<S> create<S>(S initial) {
     if (_closed) {
       throw StateError(
         'Cannot create a StateStore after its StateScope was disposed.',
       );
     }
-    return adapter.create(initial);
+    return adapter.create<S>(initial);
+  }
+
+  /// Closes and removes the store for [state] if it has been created, so the
+  /// next read starts from its initial value again.
+  Future<void> reset<S>(AppState<S> state) async {
+    if (_isOwner(state)) {
+      if (_closed) {
+        throw StateError('$state was reset after its StateScope was disposed.');
+      }
+      final store = _stores.remove(state);
+      if (store == null) return;
+      _observerDisposers.remove(state)?.call();
+      await store.close();
+      for (final observer in _observers) {
+        observer.onClose(state);
+      }
+      return;
+    }
+    final parent = _parent;
+    if (parent != null) return parent.reset(state);
+    throw StateError(
+      '$state is grouped, but no StateScope.group above this widget owns it.',
+    );
+  }
+
+  void _attachObservers<S>(AppState<S> state, StateStore<S> store) {
+    if (_observers.isEmpty) return;
+    for (final observer in _observers) {
+      observer.onCreate(state, store);
+    }
+    _observerDisposers[state] = store.listen((previous, next) {
+      for (final observer in _observers) {
+        observer.onChange(state, previous, next);
+      }
+    });
   }
 
   Future<void> _close() async {
     if (_closed) return;
     _closed = true;
-    final stores = _stores.values.toList();
+    for (final dispose in _observerDisposers.values) {
+      dispose();
+    }
+    _observerDisposers.clear();
+    final entries = _stores.entries.toList();
     _stores.clear();
-    await Future.wait(stores.map((store) => store.close()));
+    await Future.wait(entries.map((entry) => entry.value.close()));
+    for (final entry in entries) {
+      for (final observer in _observers) {
+        observer.onClose(entry.key);
+      }
+    }
   }
 }
 
@@ -151,52 +284,94 @@ final class StateRegistry {
 ///
 /// Put the root scope above `MaterialApp.router`. Put a [StateScope.group]
 /// in a go_router `ShellRoute` builder for state that a group of routes
-/// shares and that should close when the user leaves the group.
+/// shares and that should close when the user leaves the group. Use
+/// [StateScope.inherit] to share an existing [StateRegistry] with dialogs,
+/// bottom sheets, or pushed routes without transferring ownership.
 final class StateScope extends StatefulWidget {
-  /// The app's root scope. It owns every app-wide [AppState].
+  /// Creates the app's root scope, which owns every app-wide [AppState].
   const StateScope({
     super.key,
     required StateAdapter this.adapter,
     this.overrides = const [],
+    this.observers = const [],
     required this.child,
-  }) : owns = null;
+  }) : owns = null,
+       _inheritedRegistry = null;
 
-  /// A nested scope that owns the grouped states in [owns]. It uses the
-  /// adapter of the scope above it and passes other states up to it.
+  /// Creates a nested scope that owns the grouped states in [owns].
+  ///
+  /// It uses the adapter and observers of the scope above it and forwards
+  /// other states up to its parent.
   const StateScope.group({
     super.key,
-    required List<AppState<Object>> this.owns,
+    required List<AppState<Object?>> this.owns,
     this.overrides = const [],
     required this.child,
-  }) : adapter = null;
+  }) : adapter = null,
+       observers = const [],
+       _inheritedRegistry = null;
 
-  /// The library binding. Null for a group, which uses its parent's.
+  /// Re-exposes an existing [registry] to [child] without owning or closing
+  /// its stores when this widget is disposed.
+  ///
+  /// Useful for passing a [StateScope.group] registry into `showDialog`,
+  /// `showModalBottomSheet`, or a pushed route mounted on the root navigator.
+  const StateScope.inherit({
+    super.key,
+    required StateRegistry registry,
+    required this.child,
+  }) : adapter = null,
+       owns = null,
+       overrides = const [],
+       observers = const [],
+       _inheritedRegistry = registry;
+
+  /// The library binding, or `null` for a group or inherited scope.
   final StateAdapter? adapter;
 
-  /// The grouped states a group owns. Null for the root.
-  final List<AppState<Object>>? owns;
+  /// The grouped states a group owns, or `null` for a root or inherited scope.
+  final List<AppState<Object?>>? owns;
 
-  /// Initial values that replace the declared ones in this scope. A root may
-  /// override app-wide states; a group may override the states it owns.
-  final List<StateOverride<Object>> overrides;
+  /// Initial values or store factories that replace the declared ones in this
+  /// scope.
+  ///
+  /// A root scope may override app-wide states; a group may override the
+  /// states it owns.
+  final List<StateOverride<Object?>> overrides;
+
+  /// Observers notified when stores in this scope hierarchy are created,
+  /// updated, or closed.
+  final List<StateObserver> observers;
+
+  final StateRegistry? _inheritedRegistry;
 
   /// The widget below this scope.
   final Widget child;
 
-  /// The registry of the nearest scope.
+  /// Returns the [StateRegistry] of the nearest enclosing [StateScope], or
+  /// `null` if none exists.
   ///
-  /// It registers no rebuild dependency, so it is safe in `initState`; use
-  /// [StateStore.watch] or [StateStore.select] to rebuild on changes.
+  /// Registers no rebuild dependency, so it is safe to call from
+  /// [State.initState].
+  static StateRegistry? maybeOf(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<_StateScopeData>()?.registry;
+
+  /// Returns the [StateRegistry] of the nearest enclosing [StateScope].
+  ///
+  /// Registers no rebuild dependency, so it is safe to call from
+  /// [State.initState]; use [StateStore.watch] or [StateStore.select] to
+  /// rebuild on changes. Throws a [FlutterError] if no [StateScope] is above
+  /// [context].
   static StateRegistry of(BuildContext context) {
-    final scope = context.getInheritedWidgetOfExactType<_StateScopeData>();
-    if (scope == null) {
+    final registry = maybeOf(context);
+    if (registry == null) {
       throw FlutterError(
         'StateScope.of() was called with a context that has no StateScope '
         'above it.\nWrap the app in StateScope(adapter: ...) above '
         'MaterialApp.',
       );
     }
-    return scope.registry;
+    return registry;
   }
 
   @override
@@ -207,15 +382,26 @@ final class StateScope extends StatefulWidget {
     super.debugFillProperties(properties);
     properties
       ..add(
-        DiagnosticsProperty<StateAdapter?>('adapter', adapter, defaultValue: null),
+        DiagnosticsProperty<StateAdapter?>(
+          'adapter',
+          adapter,
+          defaultValue: null,
+        ),
       )
       ..add(
-        IterableProperty<AppState<Object>>('owns', owns, defaultValue: null),
+        IterableProperty<AppState<Object?>>('owns', owns, defaultValue: null),
       )
       ..add(
-        IterableProperty<StateOverride<Object>>(
+        IterableProperty<StateOverride<Object?>>(
           'overrides',
           overrides,
+          defaultValue: const [],
+        ),
+      )
+      ..add(
+        IterableProperty<StateObserver>(
+          'observers',
+          observers,
           defaultValue: const [],
         ),
       );
@@ -223,12 +409,17 @@ final class StateScope extends StatefulWidget {
 }
 
 final class _StateScopeState extends State<StateScope> {
-  late final StateRegistry _registry;
+  StateRegistry? _ownedRegistry;
+
+  StateRegistry get _activeRegistry =>
+      widget._inheritedRegistry ?? _ownedRegistry!;
 
   @override
   void initState() {
     super.initState();
-    _registry = _createRegistry();
+    if (widget._inheritedRegistry == null) {
+      _ownedRegistry = _createRegistry();
+    }
   }
 
   @override
@@ -239,7 +430,7 @@ final class _StateScopeState extends State<StateScope> {
           .dependOnInheritedWidgetOfExactType<_StateScopeData>()
           ?.registry;
       if (parent != null) {
-        _registry._parent = parent;
+        _ownedRegistry?._parent = parent;
       }
     }
   }
@@ -257,7 +448,13 @@ final class _StateScopeState extends State<StateScope> {
         widget.overrides.every((override) => !override.state.grouped),
         'A root StateScope can only override app-wide states.',
       );
-      return StateRegistry._(widget.adapter!, null, null, widget.overrides);
+      return StateRegistry._(
+        widget.adapter!,
+        null,
+        null,
+        widget.overrides,
+        widget.observers,
+      );
     }
     assert(
       owns.every((state) => state.grouped),
@@ -273,12 +470,20 @@ final class _StateScopeState extends State<StateScope> {
       parent,
       Set.of(owns),
       widget.overrides,
+      parent._observers,
     );
   }
 
   @override
   void didUpdateWidget(StateScope oldWidget) {
     super.didUpdateWidget(oldWidget);
+    assert(
+      (widget._inheritedRegistry != null) ==
+          (oldWidget._inheritedRegistry != null),
+      'A mounted StateScope cannot switch between owning and inheriting a '
+      'registry. Give it a new key to replace it.',
+    );
+    if (widget._inheritedRegistry != null) return;
     assert(
       (widget.adapter == oldWidget.adapter ||
               widget.adapter?.runtimeType == oldWidget.adapter?.runtimeType) &&
@@ -290,13 +495,16 @@ final class _StateScopeState extends State<StateScope> {
 
   @override
   void dispose() {
-    unawaited(_registry._close());
+    final owned = _ownedRegistry;
+    if (owned != null) {
+      unawaited(owned._close());
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) =>
-      _StateScopeData(registry: _registry, child: widget.child);
+      _StateScopeData(registry: _activeRegistry, child: widget.child);
 }
 
 final class _StateScopeData extends InheritedWidget {
@@ -312,21 +520,23 @@ final class _StateScopeData extends InheritedWidget {
 /// Gives a [State] stores that it owns and that close when it is disposed,
 /// like `BlocProvider(create:)` or a Riverpod `autoDispose` provider.
 ///
-/// The stores close after the [State]'s own `dispose` body, so a subclass can
-/// stop the commands that write to them first.
+/// The stores close after the [State]'s own [State.dispose] body, so a
+/// subclass can stop the commands that write to them first.
 mixin StateStoreOwner<T extends StatefulWidget> on State<T> {
-  final List<StateStore<Object>> _ownedStores = [];
+  final List<StateStore<Object?>> _ownedStores = [];
 
   /// Creates a store from the nearest [StateScope] that closes with this
-  /// [State]. Call it from `initState`, never from `build`, which would
+  /// [State].
+  ///
+  /// Call it from [State.initState], never from [State.build], which would
   /// create a new store on every rebuild.
-  StateStore<S> createStore<S extends Object>(S initial) {
+  StateStore<S> createStore<S>(S initial) {
     assert(
       !context.debugDoingBuild,
       'createStore() was called during build, which would create a new store '
       'on every rebuild. Call it from initState instead.',
     );
-    final store = StateScope.of(context).create(initial);
+    final store = StateScope.of(context).create<S>(initial);
     _ownedStores.add(store);
     return store;
   }
@@ -339,4 +549,13 @@ mixin StateStoreOwner<T extends StatefulWidget> on State<T> {
     _ownedStores.clear();
     super.dispose();
   }
+}
+
+/// Convenience extensions for reading stores from a [BuildContext].
+extension StateScopeContext on BuildContext {
+  /// Returns the shared [StateStore] for [state] from the nearest [StateScope].
+  ///
+  /// Shorthand for `StateScope.of(this).store(state)`. Registers no rebuild
+  /// dependency, so it is safe to call from [State.initState].
+  StateStore<S> store<S>(AppState<S> state) => StateScope.of(this).store(state);
 }

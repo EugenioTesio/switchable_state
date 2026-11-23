@@ -232,6 +232,209 @@ void main() {
       expect(asInt, same(asNum));
       expect(asInt.value, 0);
     });
+
+    testWidgets('maybeOf returns null without a scope and registry inside one', (
+      tester,
+    ) async {
+      StateRegistry? outside;
+      StateRegistry? inside;
+      await tester.pumpWidget(
+        Builder(
+          builder: (context) {
+            outside = StateScope.maybeOf(context);
+            return StateScope(
+              adapter: adapter,
+              child: Builder(
+                builder: (innerContext) {
+                  inside = StateScope.maybeOf(innerContext);
+                  return const SizedBox();
+                },
+              ),
+            );
+          },
+        ),
+      );
+      expect(outside, isNull);
+      expect(inside, isNotNull);
+    });
+
+    testWidgets('context.store() is shorthand for StateScope.of(context).store()', (
+      tester,
+    ) async {
+      late StateStore<int> viaExtension;
+      late StateStore<int> viaScope;
+      await tester.pumpWidget(
+        StateScope(
+          adapter: adapter,
+          child: Builder(
+            builder: (context) {
+              viaExtension = context.store(counter);
+              viaScope = StateScope.of(context).store(counter);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      expect(viaExtension, same(viaScope));
+    });
+
+    testWidgets('overrideWithStore injects a custom store owned by the scope', (
+      tester,
+    ) async {
+      final injected = _FakeStore<int>(99);
+      final registry = await pumpAndCapture(
+        tester,
+        (capture) => StateScope(
+          adapter: adapter,
+          overrides: [counter.overrideWithStore(() => injected)],
+          child: capture,
+        ),
+      );
+      expect(registry.store(counter), same(injected));
+      expect(adapter.created, isEmpty);
+
+      await tester.pumpWidget(const SizedBox());
+      expect(injected.closed, isTrue);
+    });
+
+    testWidgets('reset closes the store and starts fresh on next read', (
+      tester,
+    ) async {
+      final registry = await pumpAndCapture(
+        tester,
+        (capture) => StateScope(adapter: adapter, child: capture),
+      );
+      final first = registry.store(counter) as _FakeStore<int>;
+      first.replace(42);
+
+      await registry.reset(counter);
+      expect(first.closed, isTrue);
+
+      final second = registry.store(counter);
+      expect(second, isNot(same(first)));
+      expect(second.value, 0);
+    });
+
+    testWidgets('StateObserver receives create, change, and close events', (
+      tester,
+    ) async {
+      final events = <String>[];
+      final observer = _RecordingObserver(events);
+      final registry = await pumpAndCapture(
+        tester,
+        (capture) => StateScope(
+          adapter: adapter,
+          observers: [observer],
+          child: capture,
+        ),
+      );
+
+      final store = registry.store(counter);
+      store.replace(1);
+      store.replace(2);
+      await tester.pumpWidget(const SizedBox());
+
+      expect(events, [
+        'create:counter',
+        'change:counter:0->1',
+        'change:counter:1->2',
+        'close:counter',
+      ]);
+    });
+
+    testWidgets('StateFamily caches keys per argument and isolates stores', (
+      tester,
+    ) async {
+      final itemState = StateFamily<String, int>(
+        (id) => 'item-$id',
+        debugName: 'item',
+      );
+      final registry = await pumpAndCapture(
+        tester,
+        (capture) => StateScope(adapter: adapter, child: capture),
+      );
+
+      expect(itemState(1), same(itemState(1)));
+      expect(itemState(1), isNot(same(itemState(2))));
+      expect(registry.store(itemState(1)).value, 'item-1');
+      expect(registry.store(itemState(2)).value, 'item-2');
+      expect(
+        registry.store(itemState(1)),
+        isNot(same(registry.store(itemState(2)))),
+      );
+    });
+
+    testWidgets('StateScope.inherit shares a registry without closing it', (
+      tester,
+    ) async {
+      late StateRegistry group;
+      late StateStore<int> seenInInherited;
+      var showOverlay = false;
+      late StateSetter setHostState;
+
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) {
+            setHostState = setState;
+            return Stack(
+              textDirection: TextDirection.ltr,
+              children: [
+                StateScope(
+                  adapter: adapter,
+                  child: StateScope.group(
+                    owns: [draft],
+                    child: Builder(
+                      builder: (context) {
+                        group = StateScope.of(context);
+                        return const SizedBox();
+                      },
+                    ),
+                  ),
+                ),
+                if (showOverlay)
+                  StateScope.inherit(
+                    registry: group,
+                    child: Builder(
+                      builder: (context) {
+                        seenInInherited = context.store(draft);
+                        return const SizedBox();
+                      },
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      );
+
+      final draftStore = group.store(draft) as _FakeStore<int>;
+      draftStore.replace(7);
+
+      setHostState(() => showOverlay = true);
+      await tester.pump();
+      expect(seenInInherited, same(draftStore));
+      expect(seenInInherited.value, 7);
+
+      // Disposing the inherited scope must NOT close the original registry.
+      setHostState(() => showOverlay = false);
+      await tester.pump();
+      expect(draftStore.closed, isFalse);
+      expect(group.store(draft).value, 7);
+    });
+
+    testWidgets('supports nullable AppState declarations', (tester) async {
+      final nullableUser = AppState<String?>(() => null, debugName: 'user');
+      final registry = await pumpAndCapture(
+        tester,
+        (capture) => StateScope(adapter: adapter, child: capture),
+      );
+      final store = registry.store(nullableUser);
+      expect(store.value, isNull);
+      store.replace('Ada');
+      expect(store.value, 'Ada');
+      store.replace(null);
+      expect(store.value, isNull);
+    });
   });
 
   group('StateScope.group', () {
@@ -503,18 +706,18 @@ final class _CreatesInBuildState extends State<_CreatesInBuild>
 
 /// Records every store it creates so tests can check laziness and closing.
 final class _RecordingAdapter implements StateAdapter {
-  final created = <_FakeStore<Object>>[];
+  final created = <_FakeStore<Object?>>[];
 
   @override
-  StateStore<S> create<S extends Object>(S initial) {
+  StateStore<S> create<S>(S initial) {
     final store = _FakeStore<S>(initial);
     created.add(store);
     return store;
   }
 }
 
-/// A non-reactive store: these tests only check ownership and lifetime.
-final class _FakeStore<S extends Object> implements StateStore<S> {
+/// A simple store with synchronous listeners for testing ownership and hooks.
+final class _FakeStore<S> implements StateStore<S> {
   _FakeStore(this.value);
 
   @override
@@ -523,9 +726,19 @@ final class _FakeStore<S extends Object> implements StateStore<S> {
   bool closed = false;
 
   @override
+  bool get isClosed => closed;
+
+  final List<void Function(S previous, S current)> _listeners = [];
+
+  @override
   void replace(S next) {
     if (closed) throw closedStoreError();
+    if (value == next) return;
+    final previous = value;
     value = next;
+    for (final listener in _listeners.toList()) {
+      listener(previous, next);
+    }
   }
 
   @override
@@ -536,7 +749,36 @@ final class _FakeStore<S extends Object> implements StateStore<S> {
       render(pick(value));
 
   @override
+  VoidCallback listen(void Function(S previous, S current) onChange) {
+    if (closed) return () {};
+    _listeners.add(onChange);
+    return () => _listeners.remove(onChange);
+  }
+
+  @override
   Future<void> close() async {
     closed = true;
+    _listeners.clear();
+  }
+}
+
+final class _RecordingObserver extends StateObserver {
+  _RecordingObserver(this.events);
+
+  final List<String> events;
+
+  @override
+  void onCreate(AppState<Object?> state, StateStore<Object?> store) {
+    events.add('create:${state.debugName}');
+  }
+
+  @override
+  void onChange(AppState<Object?> state, Object? previous, Object? next) {
+    events.add('change:${state.debugName}:$previous->$next');
+  }
+
+  @override
+  void onClose(AppState<Object?> state) {
+    events.add('close:${state.debugName}');
   }
 }

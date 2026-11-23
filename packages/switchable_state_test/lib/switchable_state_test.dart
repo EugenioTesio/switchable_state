@@ -35,8 +35,8 @@ void stateStoreContract(
   group('StateStore contract', () {
     // Test tear-downs run after testWidgets has unmounted the tree, which
     // matches the ownership rule that watchers unmount before close.
-    StateStore<S> create<S extends Object>(S initial) {
-      final store = adapter.create(initial);
+    StateStore<S> create<S>(S initial) {
+      final store = adapter.create<S>(initial);
       addTearDown(store.close);
       return store;
     }
@@ -44,6 +44,16 @@ void stateStoreContract(
     group('value', () {
       test('starts at the initial snapshot', () {
         expect(create(7).value, 7);
+        expect(create(7).isClosed, isFalse);
+      });
+
+      test('supports nullable snapshots', () {
+        final store = create<String?>(null);
+        expect(store.value, isNull);
+        store.replace('hello');
+        expect(store.value, 'hello');
+        store.replace(null);
+        expect(store.value, isNull);
       });
 
       test('reflects the most recent replace immediately', () {
@@ -502,6 +512,92 @@ void stateStoreContract(
       expect(find.text('select 2'), findsOneWidget);
     });
 
+    group('listen', () {
+      test('notifies listeners with previous and current snapshots', () async {
+        final store = create(1);
+        final events = <(int, int)>[];
+        final cancel = store.listen((prev, next) => events.add((prev, next)));
+        addTearDown(cancel);
+
+        store.replace(1);
+        store.replace(2);
+        store.replace(3);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(events, [(1, 2), (2, 3)]);
+      });
+
+      test('stops notifying after the disposer is called', () async {
+        final store = create(0);
+        final events = <int>[];
+        final cancel = store.listen((_, next) => events.add(next));
+
+        store.replace(1);
+        await Future<void>.delayed(Duration.zero);
+        cancel();
+        cancel(); // idempotent
+
+        store.replace(2);
+        await Future<void>.delayed(Duration.zero);
+        expect(events, [1]);
+      });
+
+      test('listen on a closed store is a safe no-op', () async {
+        final store = create(0);
+        await store.close();
+        var called = false;
+        final cancel = store.listen((_, _) => called = true);
+        expect(cancel, returnsNormally);
+        expect(called, isFalse);
+      });
+
+      testWidgets('StateListener runs side effects without rebuilding child', (
+        tester,
+      ) async {
+        final store = create(0);
+        final seen = <int>[];
+        var childBuilds = 0;
+
+        await tester.pumpWidget(
+          host(
+            StateListener<int>(
+              store: store,
+              listenWhen: (prev, next) => next.isEven,
+              listener: (context, value) => seen.add(value),
+              child: Builder(
+                builder: (context) {
+                  childBuilds++;
+                  return const Text('static');
+                },
+              ),
+            ),
+          ),
+        );
+        expect(childBuilds, 1);
+
+        store.replace(1);
+        store.replace(2);
+        await tester.pumpAndSettle();
+
+        expect(seen, [2]);
+        expect(childBuilds, 1);
+      });
+
+      test('asListenable adapts the store to ValueListenable', () async {
+        final store = create(10);
+        final listenable = store.asListenable();
+        addTearDown(listenable.dispose);
+
+        final values = <int>[];
+        listenable.addListener(() => values.add(listenable.value));
+
+        expect(listenable.value, 10);
+        store.replace(11);
+        await Future<void>.delayed(Duration.zero);
+        expect(values, [11]);
+      });
+    });
+
     group('close', () {
       testWidgets('after the watchers unmount keeps the last snapshot', (
         tester,
@@ -513,6 +609,7 @@ void stateStoreContract(
         await tester.pumpWidget(const SizedBox.shrink());
 
         await store.close();
+        expect(store.isClosed, isTrue);
         expect(store.value, 2);
       });
 
@@ -520,15 +617,25 @@ void stateStoreContract(
         final store = create(1);
         store.replace(2);
         await store.close();
+        expect(store.isClosed, isTrue);
         expect(store.value, 2);
       });
 
-      test('makes replace and update throw a StateError', () async {
+      test('makes replace and update (even no-op) throw a StateError', () async {
         final store = create(1);
         await store.close();
 
+        var changeCalled = false;
         expect(() => store.replace(2), throwsStateError);
         expect(() => store.update((n) => n + 1), throwsStateError);
+        expect(
+          () => store.update((n) {
+            changeCalled = true;
+            return n;
+          }),
+          throwsStateError,
+        );
+        expect(changeCalled, isFalse);
         expect(store.value, 1, reason: 'a rejected write must not land');
       });
 

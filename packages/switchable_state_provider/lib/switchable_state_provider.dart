@@ -1,6 +1,6 @@
 /// A `switchable_state` adapter backed by `package:provider`.
 ///
-/// Register [ProviderStateAdapter] in the root `StateScope`:
+/// Register [ProviderStateAdapter] in the root [StateScope]:
 ///
 /// ```dart
 /// StateScope(
@@ -11,28 +11,26 @@
 library;
 
 import 'package:flutter/foundation.dart' show ChangeNotifier;
-import 'package:flutter/widgets.dart' show Widget;
+import 'package:flutter/widgets.dart' show VoidCallback, Widget;
 import 'package:provider/provider.dart';
-
 import 'package:switchable_state/switchable_state.dart';
 
 /// A [StateAdapter] backed by Provider.
 ///
-/// Each store is a `ChangeNotifier` that notifies only when the snapshot
-/// changes. [StateStore.watch] uses `ChangeNotifierProvider.value` with a
-/// `Consumer`, and [StateStore.select] a `Selector` that compares with `==`.
+/// Each store is a [ChangeNotifier] that notifies only when the snapshot
+/// changes. [StateStore.watch] uses [ChangeNotifierProvider.value] with a
+/// [Consumer], and [StateStore.select] a [Selector] that compares with `==`.
 final class ProviderStateAdapter implements StateAdapter {
-  /// Creates the adapter. It is stateless, so one const instance serves the
-  /// whole app.
+  /// Creates the adapter.
+  ///
+  /// It is stateless, so one `const` instance serves the whole app.
   const ProviderStateAdapter();
 
   @override
-  StateStore<S> create<S extends Object>(S initial) =>
-      _ProviderStore<S>(initial);
+  StateStore<S> create<S>(S initial) => _ProviderStore<S>(initial);
 }
 
-final class _ProviderStore<S extends Object> extends ChangeNotifier
-    implements StateStore<S> {
+final class _ProviderStore<S> extends ChangeNotifier implements StateStore<S> {
   _ProviderStore(this._value);
 
   S _value;
@@ -40,6 +38,9 @@ final class _ProviderStore<S extends Object> extends ChangeNotifier
 
   @override
   S get value => _value;
+
+  @override
+  bool get isClosed => _closed;
 
   // Check before assigning: a disposed ChangeNotifier only fails in
   // notifyListeners, after the snapshot would already have changed.
@@ -73,6 +74,30 @@ final class _ProviderStore<S extends Object> extends ChangeNotifier
         builder: (context, value, child) => render(value),
       ),
     );
+  }
+
+  @override
+  VoidCallback listen(void Function(S previous, S current) onChange) {
+    if (_closed) return () {};
+    var previous = _value;
+    var canceled = false;
+    void listener() {
+      if (canceled || _closed) return;
+      final current = _value;
+      if (current == previous) return;
+      final prev = previous;
+      previous = current;
+      onChange(prev, current);
+    }
+
+    addListener(listener);
+    return () {
+      if (canceled) return;
+      canceled = true;
+      if (!_closed) {
+        removeListener(listener);
+      }
+    };
   }
 
   // ChangeNotifier.dispose fails when called twice.

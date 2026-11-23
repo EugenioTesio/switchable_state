@@ -1,6 +1,6 @@
 /// A `switchable_state` adapter backed by `package:mobx`.
 ///
-/// Register [MobXStateAdapter] in the root `StateScope`:
+/// Register [MobXStateAdapter] in the root [StateScope]:
 ///
 /// ```dart
 /// StateScope(
@@ -10,27 +10,29 @@
 /// ```
 library;
 
+import 'package:flutter/foundation.dart'
+    show DiagnosticPropertiesBuilder, ObjectFlagProperty;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:mobx/mobx.dart';
-
 import 'package:switchable_state/switchable_state.dart';
 
 /// A [StateAdapter] backed by MobX.
 ///
-/// Each store is an `Observable` that changes inside `runInAction`, so it
+/// Each store is an [Observable] that changes inside [runInAction], so it
 /// works with MobX's strictest write policy. [StateStore.watch] uses an
-/// `Observer`, and [StateStore.select] reads a `Computed` inside one.
+/// [Observer], and [StateStore.select] reads a [Computed] inside one.
 final class MobXStateAdapter implements StateAdapter {
-  /// Creates the adapter. It is stateless, so one const instance serves the
-  /// whole app.
+  /// Creates the adapter.
+  ///
+  /// It is stateless, so one `const` instance serves the whole app.
   const MobXStateAdapter();
 
   @override
-  StateStore<S> create<S extends Object>(S initial) => _MobXStore<S>(initial);
+  StateStore<S> create<S>(S initial) => _MobXStore<S>(initial);
 }
 
-final class _MobXStore<S extends Object> implements StateStore<S> {
+final class _MobXStore<S> implements StateStore<S> {
   _MobXStore(S initial)
     : _state = Observable<S>(initial, equals: (a, b) => a == b);
 
@@ -41,6 +43,9 @@ final class _MobXStore<S extends Object> implements StateStore<S> {
   // or under ReactiveReadPolicy.always do not create implicit dependencies.
   @override
   S get value => _state.nonObservableValue;
+
+  @override
+  bool get isClosed => _closed;
 
   @override
   void replace(S next) {
@@ -60,6 +65,28 @@ final class _MobXStore<S extends Object> implements StateStore<S> {
   Widget select<R>(R Function(S) pick, Widget Function(R) render) =>
       _MobXSelect<S, R>(state: _state, pick: pick, render: render);
 
+  @override
+  VoidCallback listen(void Function(S previous, S current) onChange) {
+    if (_closed) return () {};
+    var previous = _state.nonObservableValue;
+    var canceled = false;
+    final disposeReaction = reaction<S>(
+      (_) => _state.value,
+      (next) {
+        if (canceled || _closed) return;
+        final prev = previous;
+        previous = next;
+        onChange(prev, next);
+      },
+      equals: (a, b) => a == b,
+    );
+    return () {
+      if (canceled) return;
+      canceled = true;
+      disposeReaction();
+    };
+  }
+
   // Observer owns its reaction and releases it when it unmounts. The
   // observable itself holds no resources, so closing only blocks writes.
   @override
@@ -70,7 +97,7 @@ final class _MobXStore<S extends Object> implements StateStore<S> {
 
 /// Observes a [Computed] instead of the whole snapshot, so the [Observer]
 /// only rebuilds when the picked value changes.
-final class _MobXSelect<S extends Object, R> extends StatefulWidget {
+final class _MobXSelect<S, R> extends StatefulWidget {
   const _MobXSelect({
     required this.state,
     required this.pick,
@@ -83,16 +110,21 @@ final class _MobXSelect<S extends Object, R> extends StatefulWidget {
 
   @override
   State<_MobXSelect<S, R>> createState() => _MobXSelectState<S, R>();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(ObjectFlagProperty<Function>.has('pick', pick))
+      ..add(ObjectFlagProperty<Function>.has('render', render));
+  }
 }
 
-final class _MobXSelectState<S extends Object, R>
-    extends State<_MobXSelect<S, R>> {
+final class _MobXSelectState<S, R> extends State<_MobXSelect<S, R>> {
   late Computed<R> _picked = _compute();
 
-  Computed<R> _compute() => Computed(
-    () => widget.pick(widget.state.value),
-    equals: (a, b) => a == b,
-  );
+  Computed<R> _compute() =>
+      Computed(() => widget.pick(widget.state.value), equals: (a, b) => a == b);
 
   @override
   void didUpdateWidget(_MobXSelect<S, R> oldWidget) {
