@@ -143,6 +143,95 @@ void main() {
       );
       expect(tester.takeException(), isAssertionError);
     });
+
+    testWidgets('allows rebuilding with a non-const adapter of the same type', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        StateScope(adapter: _RecordingAdapter(), child: const SizedBox()),
+      );
+      await tester.pumpWidget(
+        StateScope(adapter: _RecordingAdapter(), child: const SizedBox()),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('rejects duplicate overrides for the same AppState', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        StateScope(
+          adapter: adapter,
+          overrides: [
+            counter.overrideWith(() => 1),
+            counter.overrideWith(() => 2),
+          ],
+          child: const SizedBox(),
+        ),
+      );
+      expect(tester.takeException(), isAssertionError);
+    });
+
+    testWidgets('rejects create() after disposal', (tester) async {
+      final registry = await pumpAndCapture(
+        tester,
+        (capture) => StateScope(adapter: adapter, child: capture),
+      );
+      await tester.pumpWidget(const SizedBox());
+      expect(() => registry.create(0), throwsStateError);
+    });
+
+    testWidgets('supports re-entrant store reads during initialization', (
+      tester,
+    ) async {
+      late StateRegistry registry;
+      final derived = AppState<int>(
+        () => registry.store(counter).value + 10,
+        debugName: 'derived',
+      );
+      registry = await pumpAndCapture(
+        tester,
+        (capture) => StateScope(
+          adapter: adapter,
+          overrides: [counter.overrideWith(() => 5)],
+          child: capture,
+        ),
+      );
+      expect(registry.store(derived).value, 15);
+    });
+
+    testWidgets('detects circular initialization', (tester) async {
+      late StateRegistry registry;
+      late final AppState<int> cyclicA;
+      late final AppState<int> cyclicB;
+      cyclicA = AppState<int>(
+        () => registry.store(cyclicB).value,
+        debugName: 'cyclicA',
+      );
+      cyclicB = AppState<int>(
+        () => registry.store(cyclicA).value,
+        debugName: 'cyclicB',
+      );
+      registry = await pumpAndCapture(
+        tester,
+        (capture) => StateScope(adapter: adapter, child: capture),
+      );
+      expect(() => registry.store(cyclicA), throwsStateError);
+    });
+
+    testWidgets('preserves declared type S when first read through a supertype', (
+      tester,
+    ) async {
+      final registry = await pumpAndCapture(
+        tester,
+        (capture) => StateScope(adapter: adapter, child: capture),
+      );
+      final AppState<num> widened = counter;
+      final asNum = registry.store(widened);
+      final asInt = registry.store(counter);
+      expect(asInt, same(asNum));
+      expect(asInt.value, 0);
+    });
   });
 
   group('StateScope.group', () {
@@ -262,6 +351,61 @@ void main() {
         StateScope.group(owns: [draft], child: const SizedBox()),
       );
       expect(tester.takeException(), isA<FlutterError>());
+    });
+
+    testWidgets('allows rebuilding with reordered owns', (tester) async {
+      final otherDraft = AppState<int>.grouped(
+        () => 1,
+        debugName: 'otherDraft',
+      );
+      await tester.pumpWidget(
+        StateScope(
+          adapter: adapter,
+          child: StateScope.group(
+            owns: [draft, otherDraft],
+            child: const SizedBox(),
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        StateScope(
+          adapter: adapter,
+          child: StateScope.group(
+            owns: [otherDraft, draft],
+            child: const SizedBox(),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('updates parent registry when ancestor StateScope is replaced', (
+      tester,
+    ) async {
+      final groupKey = GlobalKey();
+      late StateRegistry groupRegistry;
+      Widget buildTree(Key rootKey) => StateScope(
+        key: rootKey,
+        adapter: adapter,
+        child: StateScope.group(
+          key: groupKey,
+          owns: [draft],
+          child: Builder(
+            builder: (context) {
+              groupRegistry = StateScope.of(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(buildTree(const ValueKey('root-1')));
+      final firstCounter = groupRegistry.store(counter);
+
+      await tester.pumpWidget(buildTree(const ValueKey('root-2')));
+      final secondCounter = groupRegistry.store(counter);
+      expect(secondCounter, isNot(same(firstCounter)));
+      expect(secondCounter.value, 0);
     });
   });
 

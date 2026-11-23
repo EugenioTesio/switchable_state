@@ -1,6 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart'
+    show
+        DiagnosticPropertiesBuilder,
+        DiagnosticsProperty,
+        IterableProperty,
+        setEquals;
 import 'package:flutter/widgets.dart';
 
 import 'state_adapter.dart';
@@ -35,6 +40,16 @@ final class AppState<S extends Object> {
   StateOverride<S> overrideWith(S Function() initial) =>
       StateOverride._(this, initial);
 
+  /// Creates the backing store using this declaration's reified type [S],
+  /// avoiding covariance mismatches when read through a wider type argument.
+  StateStore<S> _createStore(
+    StateAdapter adapter,
+    Object Function()? override,
+  ) {
+    final initial = override != null ? override() as S : _initial();
+    return adapter.create<S>(initial);
+  }
+
   @override
   String toString() =>
       'AppState<$S>(${debugName ?? identityHashCode(this).toRadixString(16)})';
@@ -64,7 +79,7 @@ final class StateRegistry {
   /// The adapter that creates this registry's stores.
   final StateAdapter adapter;
 
-  final StateRegistry? _parent;
+  StateRegistry? _parent;
 
   /// The grouped states a [StateScope.group] owns. Null for the root, which
   /// owns every app-wide state.
@@ -72,6 +87,7 @@ final class StateRegistry {
 
   final Map<AppState<Object>, Object Function()> _overrides;
   final Map<AppState<Object>, StateStore<Object>> _stores = {};
+  final Set<AppState<Object>> _creating = {};
   bool _closed = false;
 
   bool _isOwner(AppState<Object> state) => switch (_owns) {
@@ -87,11 +103,20 @@ final class StateRegistry {
       if (_closed) {
         throw StateError('$state was read after its StateScope was disposed.');
       }
-      final store = _stores.putIfAbsent(state, () {
-        final initial = _overrides[state]?.call() ?? state._initial();
-        return adapter.create<S>(initial as S);
-      });
-      return store as StateStore<S>;
+      final existing = _stores[state];
+      if (existing != null) return existing as StateStore<S>;
+      if (!_creating.add(state)) {
+        throw StateError(
+          'Circular initialization detected while reading $state.',
+        );
+      }
+      try {
+        final created = state._createStore(adapter, _overrides[state]);
+        _stores[state] = created;
+        return created;
+      } finally {
+        _creating.remove(state);
+      }
     }
     final parent = _parent;
     if (parent != null) return parent.store(state);
@@ -103,7 +128,14 @@ final class StateRegistry {
   /// A new store that the caller owns and must close, like a Riverpod
   /// `autoDispose` provider. A [State] can use [StateStoreOwner.createStore]
   /// to have it closed automatically.
-  StateStore<S> create<S extends Object>(S initial) => adapter.create(initial);
+  StateStore<S> create<S extends Object>(S initial) {
+    if (_closed) {
+      throw StateError(
+        'Cannot create a StateStore after its StateScope was disposed.',
+      );
+    }
+    return adapter.create(initial);
+  }
 
   Future<void> _close() async {
     if (_closed) return;
@@ -169,6 +201,25 @@ final class StateScope extends StatefulWidget {
 
   @override
   State<StateScope> createState() => _StateScopeState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(
+        DiagnosticsProperty<StateAdapter?>('adapter', adapter, defaultValue: null),
+      )
+      ..add(
+        IterableProperty<AppState<Object>>('owns', owns, defaultValue: null),
+      )
+      ..add(
+        IterableProperty<StateOverride<Object>>(
+          'overrides',
+          overrides,
+          defaultValue: const [],
+        ),
+      );
+  }
 }
 
 final class _StateScopeState extends State<StateScope> {
@@ -180,7 +231,26 @@ final class _StateScopeState extends State<StateScope> {
     _registry = _createRegistry();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.owns != null) {
+      final parent = context
+          .dependOnInheritedWidgetOfExactType<_StateScopeData>()
+          ?.registry;
+      if (parent != null) {
+        _registry._parent = parent;
+      }
+    }
+  }
+
   StateRegistry _createRegistry() {
+    assert(
+      widget.overrides.map((override) => override.state).toSet().length ==
+          widget.overrides.length,
+      'StateScope.overrides must not contain duplicate entries for the same '
+      'AppState.',
+    );
     final owns = widget.owns;
     if (owns == null) {
       assert(
@@ -210,8 +280,9 @@ final class _StateScopeState extends State<StateScope> {
   void didUpdateWidget(StateScope oldWidget) {
     super.didUpdateWidget(oldWidget);
     assert(
-      identical(widget.adapter, oldWidget.adapter) &&
-          listEquals(widget.owns, oldWidget.owns),
+      (widget.adapter == oldWidget.adapter ||
+              widget.adapter?.runtimeType == oldWidget.adapter?.runtimeType) &&
+          setEquals(widget.owns?.toSet(), oldWidget.owns?.toSet()),
       'A mounted StateScope cannot change its adapter or owned states. '
       'Give it a new key to replace it.',
     );
