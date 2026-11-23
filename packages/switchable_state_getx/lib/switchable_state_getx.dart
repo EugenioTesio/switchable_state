@@ -175,7 +175,10 @@ final class _GetXSelectState<S, R> extends State<_GetXSelect<S, R>> {
 
   @override
   void dispose() {
-    _unsubscribe(widget.store);
+    if (!widget.store._state.subject.isClosed) {
+      unawaited(_subscription?.cancel());
+    }
+    _subscription = null;
     super.dispose();
   }
 

@@ -1,3 +1,6 @@
+/// @docImport 'state_scope.dart';
+library;
+
 import 'package:flutter/widgets.dart';
 
 import 'state_adapter.dart';

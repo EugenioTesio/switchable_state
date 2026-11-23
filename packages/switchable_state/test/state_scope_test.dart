@@ -219,64 +219,67 @@ void main() {
       expect(() => registry.store(cyclicA), throwsStateError);
     });
 
-    testWidgets('preserves declared type S when first read through a supertype', (
-      tester,
-    ) async {
-      final registry = await pumpAndCapture(
-        tester,
-        (capture) => StateScope(adapter: adapter, child: capture),
-      );
-      final AppState<num> widened = counter;
-      final asNum = registry.store(widened);
-      final asInt = registry.store(counter);
-      expect(asInt, same(asNum));
-      expect(asInt.value, 0);
-    });
+    testWidgets(
+      'preserves declared type S when first read through a supertype',
+      (tester) async {
+        final registry = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(adapter: adapter, child: capture),
+        );
+        final AppState<num> widened = counter;
+        final asNum = registry.store(widened);
+        final asInt = registry.store(counter);
+        expect(asInt, same(asNum));
+        expect(asInt.value, 0);
+      },
+    );
 
-    testWidgets('maybeOf returns null without a scope and registry inside one', (
-      tester,
-    ) async {
-      StateRegistry? outside;
-      StateRegistry? inside;
-      await tester.pumpWidget(
-        Builder(
-          builder: (context) {
-            outside = StateScope.maybeOf(context);
-            return StateScope(
-              adapter: adapter,
-              child: Builder(
-                builder: (innerContext) {
-                  inside = StateScope.maybeOf(innerContext);
-                  return const SizedBox();
-                },
-              ),
-            );
-          },
-        ),
-      );
-      expect(outside, isNull);
-      expect(inside, isNotNull);
-    });
-
-    testWidgets('context.store() is shorthand for StateScope.of(context).store()', (
-      tester,
-    ) async {
-      late StateStore<int> viaExtension;
-      late StateStore<int> viaScope;
-      await tester.pumpWidget(
-        StateScope(
-          adapter: adapter,
-          child: Builder(
+    testWidgets(
+      'maybeOf returns null without a scope and registry inside one',
+      (tester) async {
+        StateRegistry? outside;
+        StateRegistry? inside;
+        await tester.pumpWidget(
+          Builder(
             builder: (context) {
-              viaExtension = context.store(counter);
-              viaScope = StateScope.of(context).store(counter);
-              return const SizedBox();
+              outside = StateScope.maybeOf(context);
+              return StateScope(
+                adapter: adapter,
+                child: Builder(
+                  builder: (innerContext) {
+                    inside = StateScope.maybeOf(innerContext);
+                    return const SizedBox();
+                  },
+                ),
+              );
             },
           ),
-        ),
-      );
-      expect(viaExtension, same(viaScope));
-    });
+        );
+        expect(outside, isNull);
+        expect(inside, isNotNull);
+      },
+    );
+
+    testWidgets(
+      'context.store() is shorthand for StateScope.of(context).store()',
+      (tester) async {
+        late StateStore<int> viaExtension;
+        late StateStore<int> viaScope;
+        await tester.pumpWidget(
+          StateScope(
+            adapter: adapter,
+            child: Builder(
+              builder: (context) {
+                viaExtension = context.store(counter);
+                viaScope = StateScope.of(context).store(counter);
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+        expect(viaExtension, same(viaScope));
+      },
+    );
 
     testWidgets('overrideWithStore injects a custom store owned by the scope', (
       tester,
@@ -322,11 +325,8 @@ void main() {
       final observer = _RecordingObserver(events);
       final registry = await pumpAndCapture(
         tester,
-        (capture) => StateScope(
-          adapter: adapter,
-          observers: [observer],
-          child: capture,
-        ),
+        (capture) =>
+            StateScope(adapter: adapter, observers: [observer], child: capture),
       );
 
       final store = registry.store(counter);
@@ -582,34 +582,35 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('updates parent registry when ancestor StateScope is replaced', (
-      tester,
-    ) async {
-      final groupKey = GlobalKey();
-      late StateRegistry groupRegistry;
-      Widget buildTree(Key rootKey) => StateScope(
-        key: rootKey,
-        adapter: adapter,
-        child: StateScope.group(
-          key: groupKey,
-          owns: [draft],
-          child: Builder(
-            builder: (context) {
-              groupRegistry = StateScope.of(context);
-              return const SizedBox();
-            },
+    testWidgets(
+      'updates parent registry when ancestor StateScope is replaced',
+      (tester) async {
+        final groupKey = GlobalKey();
+        late StateRegistry groupRegistry;
+        Widget buildTree(Key rootKey) => StateScope(
+          key: rootKey,
+          adapter: adapter,
+          child: StateScope.group(
+            key: groupKey,
+            owns: [draft],
+            child: Builder(
+              builder: (context) {
+                groupRegistry = StateScope.of(context);
+                return const SizedBox();
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpWidget(buildTree(const ValueKey('root-1')));
-      final firstCounter = groupRegistry.store(counter);
+        await tester.pumpWidget(buildTree(const ValueKey('root-1')));
+        final firstCounter = groupRegistry.store(counter);
 
-      await tester.pumpWidget(buildTree(const ValueKey('root-2')));
-      final secondCounter = groupRegistry.store(counter);
-      expect(secondCounter, isNot(same(firstCounter)));
-      expect(secondCounter.value, 0);
-    });
+        await tester.pumpWidget(buildTree(const ValueKey('root-2')));
+        final secondCounter = groupRegistry.store(counter);
+        expect(secondCounter, isNot(same(firstCounter)));
+        expect(secondCounter.value, 0);
+      },
+    );
   });
 
   group('StateStoreOwner', () {

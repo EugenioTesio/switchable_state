@@ -98,8 +98,9 @@ extension StateStoreUpdates<S> on StateStore<S> {
   /// Exposes this store as a [ValueListenable] for Flutter APIs such as
   /// `GoRouter.refreshListenable` or [ValueListenableBuilder].
   ///
-  /// Call [StateStoreValueListenable.dispose] when the listenable is no longer
-  /// needed to cancel its underlying [StateStore.listen] subscription.
+  /// Call [ChangeNotifier.dispose] on the returned
+  /// [StateStoreValueListenable] when it is no longer needed to cancel its
+  /// underlying [StateStore.listen] subscription.
   StateStoreValueListenable<S> asListenable() =>
       StateStoreValueListenable<S>(this);
 }
@@ -108,7 +109,7 @@ extension StateStoreUpdates<S> on StateStore<S> {
 final class StateStoreValueListenable<S> extends ChangeNotifier
     implements ValueListenable<S> {
   /// Creates a [ValueListenable] backed by [store].
-  StateStoreValueListenable(this._store) {
+  StateStoreValueListenable(StateStore<S> store) : _store = store {
     _unsubscribe = _store.listen((_, _) {
       if (!_disposed) notifyListeners();
     });

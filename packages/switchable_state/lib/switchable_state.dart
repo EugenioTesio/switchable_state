@@ -10,6 +10,11 @@
 /// Add one adapter package, for example `switchable_state_bloc`, and pass
 /// its adapter to the root [StateScope], or use the built-in
 /// [ValueNotifierStateAdapter] with zero third-party dependencies.
+///
+/// @docImport 'src/state_adapter.dart';
+/// @docImport 'src/state_listener.dart';
+/// @docImport 'src/state_scope.dart';
+/// @docImport 'src/value_notifier_adapter.dart';
 library;
 
 export 'src/state_adapter.dart';

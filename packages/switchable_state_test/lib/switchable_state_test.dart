@@ -199,69 +199,71 @@ void stateStoreContract(
         expect(builds, 1);
       });
 
-      testWidgets('reading another store.value inside watch does not subscribe', (
-        tester,
-      ) async {
-        final watched = create(1);
-        final other = create(10);
-        var builds = 0;
-        await tester.pumpWidget(
-          host(
-            watched.watch((w) {
-              builds++;
-              return Text('$w-${other.value}');
-            }),
-          ),
-        );
-        expect(find.text('1-10'), findsOneWidget);
-        expect(builds, 1);
+      testWidgets(
+        'reading another store.value inside watch does not subscribe',
+        (tester) async {
+          final watched = create(1);
+          final other = create(10);
+          var builds = 0;
+          await tester.pumpWidget(
+            host(
+              watched.watch((w) {
+                builds++;
+                return Text('$w-${other.value}');
+              }),
+            ),
+          );
+          expect(find.text('1-10'), findsOneWidget);
+          expect(builds, 1);
 
-        other.replace(20);
-        await tester.pumpAndSettle();
-        expect(
-          builds,
-          1,
-          reason: 'reading other.value must not subscribe to other',
-        );
-      });
+          other.replace(20);
+          await tester.pumpAndSettle();
+          expect(
+            builds,
+            1,
+            reason: 'reading other.value must not subscribe to other',
+          );
+        },
+      );
 
-      testWidgets('switching stores in the same slot unsubscribes the old one', (
-        tester,
-      ) async {
-        final first = create(1);
-        final second = create(100);
-        var builds = 0;
+      testWidgets(
+        'switching stores in the same slot unsubscribes the old one',
+        (tester) async {
+          final first = create(1);
+          final second = create(100);
+          var builds = 0;
 
-        await tester.pumpWidget(
-          host(
-            first.watch((n) {
-              builds++;
-              return Text('v $n');
-            }),
-          ),
-        );
-        expect(find.text('v 1'), findsOneWidget);
+          await tester.pumpWidget(
+            host(
+              first.watch((n) {
+                builds++;
+                return Text('v $n');
+              }),
+            ),
+          );
+          expect(find.text('v 1'), findsOneWidget);
 
-        await tester.pumpWidget(
-          host(
-            second.watch((n) {
-              builds++;
-              return Text('v $n');
-            }),
-          ),
-        );
-        expect(find.text('v 100'), findsOneWidget);
-        final buildsAfterSwap = builds;
+          await tester.pumpWidget(
+            host(
+              second.watch((n) {
+                builds++;
+                return Text('v $n');
+              }),
+            ),
+          );
+          expect(find.text('v 100'), findsOneWidget);
+          final buildsAfterSwap = builds;
 
-        first.replace(2);
-        await tester.pumpAndSettle();
-        expect(builds, buildsAfterSwap);
+          first.replace(2);
+          await tester.pumpAndSettle();
+          expect(builds, buildsAfterSwap);
 
-        await first.close();
-        second.replace(101);
-        await tester.pumpAndSettle();
-        expect(find.text('v 101'), findsOneWidget);
-      });
+          await first.close();
+          second.replace(101);
+          await tester.pumpAndSettle();
+          expect(find.text('v 101'), findsOneWidget);
+        },
+      );
     });
 
     group('select', () {
@@ -454,13 +456,7 @@ void stateStoreContract(
         final existing = create(0);
         late StateStore<int> createdInInit;
         await tester.pumpWidget(
-          host(
-            Column(
-              children: [
-                existing.watch((n) => Text('existing $n')),
-              ],
-            ),
-          ),
+          host(Column(children: [existing.watch((n) => Text('existing $n'))])),
         );
 
         await tester.pumpWidget(
@@ -621,23 +617,26 @@ void stateStoreContract(
         expect(store.value, 2);
       });
 
-      test('makes replace and update (even no-op) throw a StateError', () async {
-        final store = create(1);
-        await store.close();
+      test(
+        'makes replace and update (even no-op) throw a StateError',
+        () async {
+          final store = create(1);
+          await store.close();
 
-        var changeCalled = false;
-        expect(() => store.replace(2), throwsStateError);
-        expect(() => store.update((n) => n + 1), throwsStateError);
-        expect(
-          () => store.update((n) {
-            changeCalled = true;
-            return n;
-          }),
-          throwsStateError,
-        );
-        expect(changeCalled, isFalse);
-        expect(store.value, 1, reason: 'a rejected write must not land');
-      });
+          var changeCalled = false;
+          expect(() => store.replace(2), throwsStateError);
+          expect(() => store.update((n) => n + 1), throwsStateError);
+          expect(
+            () => store.update((n) {
+              changeCalled = true;
+              return n;
+            }),
+            throwsStateError,
+          );
+          expect(changeCalled, isFalse);
+          expect(store.value, 1, reason: 'a rejected write must not land');
+        },
+      );
 
       test('can be called more than once', () async {
         final store = create(1);
