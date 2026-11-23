@@ -168,6 +168,90 @@ void stateStoreContract(
         await tester.pumpAndSettle();
         expect(find.text('count 3'), findsOneWidget);
       });
+
+      testWidgets('ignores an initial replace equal to the initial snapshot', (
+        tester,
+      ) async {
+        final store = create('ab');
+        var builds = 0;
+        await tester.pumpWidget(
+          host(
+            store.watch((s) {
+              builds++;
+              return Text(s);
+            }),
+          ),
+        );
+        expect(builds, 1);
+
+        store.replace(['a', 'b'].join());
+        await tester.pumpAndSettle();
+        expect(builds, 1);
+      });
+
+      testWidgets('reading another store.value inside watch does not subscribe', (
+        tester,
+      ) async {
+        final watched = create(1);
+        final other = create(10);
+        var builds = 0;
+        await tester.pumpWidget(
+          host(
+            watched.watch((w) {
+              builds++;
+              return Text('$w-${other.value}');
+            }),
+          ),
+        );
+        expect(find.text('1-10'), findsOneWidget);
+        expect(builds, 1);
+
+        other.replace(20);
+        await tester.pumpAndSettle();
+        expect(
+          builds,
+          1,
+          reason: 'reading other.value must not subscribe to other',
+        );
+      });
+
+      testWidgets('switching stores in the same slot unsubscribes the old one', (
+        tester,
+      ) async {
+        final first = create(1);
+        final second = create(100);
+        var builds = 0;
+
+        await tester.pumpWidget(
+          host(
+            first.watch((n) {
+              builds++;
+              return Text('v $n');
+            }),
+          ),
+        );
+        expect(find.text('v 1'), findsOneWidget);
+
+        await tester.pumpWidget(
+          host(
+            second.watch((n) {
+              builds++;
+              return Text('v $n');
+            }),
+          ),
+        );
+        expect(find.text('v 100'), findsOneWidget);
+        final buildsAfterSwap = builds;
+
+        first.replace(2);
+        await tester.pumpAndSettle();
+        expect(builds, buildsAfterSwap);
+
+        await first.close();
+        second.replace(101);
+        await tester.pumpAndSettle();
+        expect(find.text('v 101'), findsOneWidget);
+      });
     });
 
     group('select', () {
@@ -255,7 +339,141 @@ void stateStoreContract(
         await tester.pumpAndSettle();
         expect(find.text('2-2'), findsOneWidget);
       });
+
+      testWidgets(
+        'reading store.value or another store.value inside select does not '
+        'defeat selection',
+        (tester) async {
+          final store = create((a: 1, b: 10));
+          final other = create(100);
+          var renders = 0;
+          await tester.pumpWidget(
+            host(
+              store.select((s) => s.a, (a) {
+                renders++;
+                return Text('$a-${store.value.b}-${other.value}');
+              }),
+            ),
+          );
+          expect(renders, 1);
+
+          store.replace((a: 1, b: 11));
+          other.replace(200);
+          await tester.pumpAndSettle();
+          expect(
+            renders,
+            1,
+            reason: 'value reads inside render must not add subscriptions',
+          );
+        },
+      );
+
+      testWidgets('supports nullable picked values', (tester) async {
+        final store = create<({String? label, int count})>((
+          label: null,
+          count: 0,
+        ));
+        var renders = 0;
+        await tester.pumpWidget(
+          host(
+            store.select((s) => s.label, (label) {
+              renders++;
+              return Text(label ?? 'none');
+            }),
+          ),
+        );
+        expect(find.text('none'), findsOneWidget);
+        expect(renders, 1);
+
+        store.replace((label: null, count: 1));
+        await tester.pumpAndSettle();
+        expect(renders, 1);
+
+        store.replace((label: 'hi', count: 1));
+        await tester.pumpAndSettle();
+        expect(find.text('hi'), findsOneWidget);
+        expect(renders, 2);
+
+        store.replace((label: null, count: 2));
+        await tester.pumpAndSettle();
+        expect(find.text('none'), findsOneWidget);
+        expect(renders, 3);
+      });
+
+      testWidgets('switching stores in select unsubscribes the old one', (
+        tester,
+      ) async {
+        final first = create((a: 1, b: 10));
+        final second = create((a: 2, b: 20));
+        var renders = 0;
+
+        await tester.pumpWidget(
+          host(
+            first.select((s) => s.a, (a) {
+              renders++;
+              return Text('a $a');
+            }),
+          ),
+        );
+        await tester.pumpWidget(
+          host(
+            second.select((s) => s.a, (a) {
+              renders++;
+              return Text('a $a');
+            }),
+          ),
+        );
+        expect(find.text('a 2'), findsOneWidget);
+        final rendersAfterSwap = renders;
+
+        first.replace((a: 99, b: 10));
+        await tester.pumpAndSettle();
+        expect(renders, rendersAfterSwap);
+
+        await first.close();
+        second.replace((a: 3, b: 20));
+        await tester.pumpAndSettle();
+        expect(find.text('a 3'), findsOneWidget);
+      });
     });
+
+    testWidgets(
+      'writing to a new unwatched store in initState works while another '
+      'watcher is mounted',
+      (tester) async {
+        final existing = create(0);
+        late StateStore<int> createdInInit;
+        await tester.pumpWidget(
+          host(
+            Column(
+              children: [
+                existing.watch((n) => Text('existing $n')),
+              ],
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(
+          host(
+            Column(
+              children: [
+                existing.watch((n) => Text('existing $n')),
+                _WritesNewStoreInInitState(
+                  onCreate: () {
+                    createdInInit = create(1);
+                    return createdInInit;
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.text('init 2'), findsOneWidget);
+        expect(createdInInit.value, 2);
+      },
+    );
 
     // A route covered by another one stays mounted with TickerMode off. The
     // same widget instance is reused when it is shown again, so only the
@@ -329,4 +547,29 @@ final class _Snapshot {
   const _Snapshot(this.label);
 
   final String label;
+}
+
+final class _WritesNewStoreInInitState extends StatefulWidget {
+  const _WritesNewStoreInInitState({required this.onCreate});
+
+  final StateStore<int> Function() onCreate;
+
+  @override
+  State<_WritesNewStoreInInitState> createState() =>
+      _WritesNewStoreInInitStateState();
+}
+
+final class _WritesNewStoreInInitStateState
+    extends State<_WritesNewStoreInInitState> {
+  late final StateStore<int> _store;
+
+  @override
+  void initState() {
+    super.initState();
+    _store = widget.onCreate();
+    _store.replace(2);
+  }
+
+  @override
+  Widget build(BuildContext context) => _store.watch((n) => Text('init $n'));
 }

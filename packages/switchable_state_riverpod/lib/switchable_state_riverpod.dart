@@ -34,60 +34,104 @@ final class RiverpodStateAdapter implements StateAdapter {
 }
 
 final class _RiverpodStore<S extends Object> implements StateStore<S> {
-  _RiverpodStore(S initial)
-    : _provider = NotifierProvider<_SnapshotNotifier<S>, S>(
-        () => _SnapshotNotifier(initial),
-      );
+  _RiverpodStore(S initial) : _latest = initial {
+    _provider = NotifierProvider<_SnapshotNotifier<S>, S>(
+      () => _SnapshotNotifier<S>(this),
+    );
+  }
 
   final ProviderContainer _container = ProviderContainer();
-  final NotifierProvider<_SnapshotNotifier<S>, S> _provider;
+  late final NotifierProvider<_SnapshotNotifier<S>, S> _provider;
 
-  /// The last snapshot, kept because a disposed container cannot be read.
-  /// Non-null exactly when the store is closed.
-  S? _closedValue;
+  S _latest;
+  bool _providerMounted = false;
+  bool _closed = false;
 
-  @override
-  S get value => _closedValue ?? _container.read(_provider);
-
-  @override
-  void replace(S next) {
-    if (_closedValue != null) throw closedStoreError();
-    _container.read(_provider.notifier).replace(next);
+  S _mountNotifier() {
+    _providerMounted = true;
+    return _latest;
   }
 
   @override
-  Widget watch(Widget Function(S) render) => UncontrolledProviderScope(
+  S get value => _latest;
+
+  @override
+  void replace(S next) {
+    if (_closed) throw closedStoreError();
+    if (_latest == next) return;
+    _latest = next;
+    // Defer touching the container until a watcher mounts the provider, so
+    // writing to a brand-new route store in initState does not trip Riverpod's
+    // global debugCanModifyProviders check on an unrelated mounted scope.
+    if (_providerMounted) {
+      _container.read(_provider.notifier).replace(next);
+    }
+  }
+
+  @override
+  Widget watch(Widget Function(S) render) => _RiverpodBridge(
     container: _container,
-    child: Consumer(
-      builder: (context, ref, child) => render(ref.watch(_provider)),
-    ),
+    builder: (context, ref) => render(ref.watch(_provider)),
   );
 
   @override
   Widget select<R>(R Function(S) pick, Widget Function(R) render) =>
-      UncontrolledProviderScope(
+      _RiverpodBridge(
         container: _container,
-        child: Consumer(
-          builder: (context, ref, child) =>
-              render(ref.watch(_provider.select(pick))),
-        ),
+        builder: (context, ref) => render(ref.watch(_provider.select(pick))),
       );
 
   @override
   Future<void> close() async {
-    if (_closedValue != null) return;
-    _closedValue = value;
+    if (_closed) return;
+    _closed = true;
     _container.dispose();
   }
 }
 
-final class _SnapshotNotifier<S extends Object> extends Notifier<S> {
-  _SnapshotNotifier(this.initial);
+final class _RiverpodBridge extends StatelessWidget {
+  const _RiverpodBridge({required this.container, required this.builder});
 
-  final S initial;
+  final ProviderContainer container;
+  final Widget Function(BuildContext context, WidgetRef ref) builder;
 
   @override
-  S build() => initial;
+  Widget build(BuildContext context) {
+    final outerContainer = _maybeContainerOf(context);
+    return UncontrolledProviderScope(
+      // Key by container so swapping stores in the same slot disposes the old
+      // _UncontrolledProviderScopeState and unregisters its scheduler Vsync.
+      key: ObjectKey(container),
+      container: container,
+      child: Consumer(
+        builder: (context, ref, child) {
+          final built = builder(context, ref);
+          if (outerContainer == null) return built;
+          return UncontrolledProviderScope(
+            container: outerContainer,
+            child: built,
+          );
+        },
+      ),
+    );
+  }
+
+  static ProviderContainer? _maybeContainerOf(BuildContext context) {
+    try {
+      return ProviderScope.containerOf(context, listen: false);
+    } on StateError {
+      return null;
+    }
+  }
+}
+
+final class _SnapshotNotifier<S extends Object> extends Notifier<S> {
+  _SnapshotNotifier(this._store);
+
+  final _RiverpodStore<S> _store;
+
+  @override
+  S build() => _store._mountNotifier();
 
   void replace(S next) => state = next;
 }

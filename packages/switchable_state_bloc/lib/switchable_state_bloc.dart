@@ -42,6 +42,7 @@ final class _CubitStore<S extends Object> extends Cubit<S>
   @override
   void replace(S next) {
     if (isClosed) throw closedStoreError();
+    if (state == next) return;
     emit(next);
   }
 

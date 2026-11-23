@@ -31,13 +31,16 @@ final class MobXStateAdapter implements StateAdapter {
 }
 
 final class _MobXStore<S extends Object> implements StateStore<S> {
-  _MobXStore(S initial) : _state = Observable<S>(initial);
+  _MobXStore(S initial)
+    : _state = Observable<S>(initial, equals: (a, b) => a == b);
 
   final Observable<S> _state;
   bool _closed = false;
 
+  // Read without reporting observation so value reads inside another watcher
+  // or under ReactiveReadPolicy.always do not create implicit dependencies.
   @override
-  S get value => _state.value;
+  S get value => _state.nonObservableValue;
 
   @override
   void replace(S next) {
@@ -46,8 +49,12 @@ final class _MobXStore<S extends Object> implements StateStore<S> {
   }
 
   @override
-  Widget watch(Widget Function(S) render) =>
-      Observer(builder: (context) => render(_state.value));
+  Widget watch(Widget Function(S) render) => Observer(
+    builder: (context) {
+      final snapshot = _state.value;
+      return mainContext.untracked(() => render(snapshot));
+    },
+  );
 
   @override
   Widget select<R>(R Function(S) pick, Widget Function(R) render) =>
@@ -82,16 +89,26 @@ final class _MobXSelectState<S extends Object, R>
     extends State<_MobXSelect<S, R>> {
   late Computed<R> _picked = _compute();
 
-  Computed<R> _compute() => Computed(() => widget.pick(widget.state.value));
+  Computed<R> _compute() => Computed(
+    () => widget.pick(widget.state.value),
+    equals: (a, b) => a == b,
+  );
 
   @override
   void didUpdateWidget(_MobXSelect<S, R> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // A rebuilt parent may pass a different pick, so derive afresh.
-    _picked = _compute();
+    // A rebuilt parent may pass a different store or pick, so derive afresh.
+    if (!identical(oldWidget.state, widget.state) ||
+        oldWidget.pick != widget.pick) {
+      _picked = _compute();
+    }
   }
 
   @override
-  Widget build(BuildContext context) =>
-      Observer(builder: (context) => widget.render(_picked.value));
+  Widget build(BuildContext context) => Observer(
+    builder: (context) {
+      final value = _picked.value;
+      return mainContext.untracked(() => widget.render(value));
+    },
+  );
 }

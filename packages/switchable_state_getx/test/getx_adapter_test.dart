@@ -37,5 +37,17 @@ void main() {
       await store.close();
       await expectLater(store.close(), completes);
     });
+
+    testWidgets('closing a store before select unmounts does not throw', (
+      tester,
+    ) async {
+      final store = adapter.create((a: 1, b: 10));
+      await tester.pumpWidget(
+        host(store.select((s) => s.a, (a) => Text('a $a'))),
+      );
+      await store.close();
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(tester.takeException(), isNull);
+    });
   });
 }

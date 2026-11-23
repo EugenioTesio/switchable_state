@@ -48,5 +48,18 @@ void main() {
         expect(store.value, 0);
       },
     );
+
+    test('value reads work under ReactiveReadPolicy.always', () {
+      final previous = mainContext.config;
+      mainContext.config = previous.clone(
+        readPolicy: ReactiveReadPolicy.always,
+      );
+      addTearDown(() => mainContext.config = previous);
+
+      final store = adapter.create(42);
+      addTearDown(store.close);
+      expect(() => store.value, returnsNormally);
+      expect(store.value, 42);
+    });
   });
 }

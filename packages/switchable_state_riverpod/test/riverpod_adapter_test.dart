@@ -64,5 +64,41 @@ void main() {
       await store.close();
       expect(store.value, 2);
     });
+
+    testWidgets('preserves an ancestor ProviderScope inside watch and select', (
+      tester,
+    ) async {
+      final appProvider = Provider((ref) => 'from-app-scope');
+      final store = adapter.create((a: 1, b: 10));
+      addTearDown(store.close);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [appProvider.overrideWithValue('overridden-in-app')],
+          child: host(
+            Column(
+              children: [
+                store.watch(
+                  (s) => Consumer(
+                    builder: (context, ref, _) =>
+                        Text('w:${s.a}:${ref.watch(appProvider)}'),
+                  ),
+                ),
+                store.select(
+                  (s) => s.a,
+                  (a) => Consumer(
+                    builder: (context, ref, _) =>
+                        Text('s:$a:${ref.watch(appProvider)}'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('w:1:overridden-in-app'), findsOneWidget);
+      expect(find.text('s:1:overridden-in-app'), findsOneWidget);
+    });
   });
 }

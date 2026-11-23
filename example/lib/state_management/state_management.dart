@@ -61,6 +61,8 @@ StateManagementOption? selectedStateManagement(GetIt services) {
   if (!services.isRegistered<StateAdapter>()) return null;
   final adapter = services<StateAdapter>();
   return stateManagementOptions.firstWhere(
-    (option) => identical(option.adapter, adapter),
+    (option) =>
+        identical(option.adapter, adapter) ||
+        option.adapter.runtimeType == adapter.runtimeType,
   );
 }

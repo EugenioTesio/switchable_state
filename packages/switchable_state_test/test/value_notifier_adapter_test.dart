@@ -68,6 +68,7 @@ final class _SelectState<S, R> extends State<_Select<S, R>> {
   @override
   void initState() {
     super.initState();
+    _picked = widget.pick(widget.notifier.value);
     widget.notifier.addListener(_onChange);
   }
 
@@ -81,6 +82,7 @@ final class _SelectState<S, R> extends State<_Select<S, R>> {
   }
 
   void _onChange() {
+    if (!mounted) return;
     if (widget.pick(widget.notifier.value) != _picked) setState(() {});
   }
 
