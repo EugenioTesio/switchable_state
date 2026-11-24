@@ -64,7 +64,7 @@ Run each member's tests from its folder, for example `cd packages/switchable_sta
 | `packages/switchable_state` | 62 | The scope with a fake adapter: lazy creation, keys, overrides, which stores close with which scope, groups and families, `reset`, observers, `StateStoreOwner`, `StateListener`, `asListenable`, and `update` |
 | Each adapter package | 38–41 | The shared contract, then that library's own binding |
 | `packages/switchable_state_test` | 34 | The contract against a `ValueNotifier` reference adapter |
-| `example` | 67 | The app on all five libraries, go_router route groups, and the README counter |
+| `example` | 77 | The app on all five libraries, go_router route groups, the failed-load snack bar from `StateListener`, and the README counter |
 
 Use Flutter 3.47 or later (Dart 3.13 or later).
 

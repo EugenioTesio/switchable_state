@@ -27,6 +27,7 @@ const rows = [
 const loading = 'Updating transactions…';
 const failed = 'Couldn’t load transactions. Tap Refresh to retry.';
 const empty = 'No matching transactions.';
+const snackBar = 'Couldn’t load transactions.';
 
 void main() {
   for (final MapEntry(key: name, value: adapter) in adapters.entries) {
@@ -122,6 +123,48 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text(empty), findsOneWidget);
         expect(requests, hasLength(3));
+      });
+
+      testWidgets('a failed load shows a snack bar whose Retry reloads', (
+        tester,
+      ) async {
+        await mount(tester);
+        requests.single.completeError(StateError('offline'));
+        await tester.pumpAndSettle();
+        expect(find.text(failed), findsOneWidget);
+        expect(find.text(snackBar), findsOneWidget);
+
+        await tester.tap(find.text('Retry'));
+        await tester.pumpAndSettle();
+        expect(requests, hasLength(2));
+        expect(find.text(loading), findsOneWidget);
+
+        requests.last.complete(rows);
+        await tester.pumpAndSettle();
+        expect(find.text('Pending purchase'), findsOneWidget);
+      });
+
+      testWidgets('shows the snack bar once per failure', (tester) async {
+        await mount(tester);
+        requests.single.completeError(StateError('offline'));
+        await tester.pumpAndSettle();
+        expect(find.text(snackBar), findsOneWidget);
+        tester
+            .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))
+            .removeCurrentSnackBar();
+        await tester.pumpAndSettle();
+
+        // Still failed: a filter change is not a new failure.
+        await tester.tap(find.text('Pending only'));
+        await tester.pumpAndSettle();
+        expect(find.text(snackBar), findsNothing);
+
+        // A retry that fails again is.
+        await tester.tap(find.text('Refresh'));
+        await tester.pumpAndSettle();
+        requests.last.completeError(StateError('still offline'));
+        await tester.pumpAndSettle();
+        expect(find.text(snackBar), findsOneWidget);
       });
 
       testWidgets('keeps a filter changed while a refresh is pending', (
