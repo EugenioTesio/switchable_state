@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart'
     show DiagnosticPropertiesBuilder, ObjectFlagProperty;
 import 'package:flutter/widgets.dart';
@@ -9,6 +11,11 @@ import 'state_adapter.dart';
 ///
 /// Use this for navigation, snack bars, dialogs, analytics, or logging—similar
 /// to `BlocListener` or Riverpod's `ref.listen`.
+///
+/// [listener] always runs after the write that caused it has returned, in a
+/// microtask, whichever adapter is registered. A write made while Flutter
+/// builds, for example from a route's `initState`, therefore never runs a
+/// side effect in the middle of that build.
 final class StateListener<S> extends StatefulWidget {
   /// Creates a listener attached to [store].
   const StateListener({
@@ -54,12 +61,18 @@ final class _StateListenerState<S> extends State<StateListener<S>> {
   }
 
   void _subscribe() {
-    _unsubscribe = widget.store.listen((previous, current) {
-      if (!mounted) return;
-      if (widget.listenWhen?.call(previous, current) ?? true) {
-        widget.listener(context, current);
-      }
+    final store = widget.store;
+    _unsubscribe = store.listen((previous, current) {
+      scheduleMicrotask(() => _deliver(store, previous, current));
     });
+  }
+
+  void _deliver(StateStore<S> store, S previous, S current) {
+    // Drop events that arrive after unmounting or switching stores.
+    if (!mounted || !identical(store, widget.store)) return;
+    if (widget.listenWhen?.call(previous, current) ?? true) {
+      widget.listener(context, current);
+    }
   }
 
   @override

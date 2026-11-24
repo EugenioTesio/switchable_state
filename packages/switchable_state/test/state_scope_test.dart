@@ -300,22 +300,140 @@ void main() {
       expect(injected.closed, isTrue);
     });
 
-    testWidgets('reset closes the store and starts fresh on next read', (
-      tester,
-    ) async {
-      final registry = await pumpAndCapture(
+    group('reset', () {
+      testWidgets('returns the existing store to its initial snapshot', (
         tester,
-        (capture) => StateScope(adapter: adapter, child: capture),
-      );
-      final first = registry.store(counter) as _FakeStore<int>;
-      first.replace(42);
+      ) async {
+        final registry = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(adapter: adapter, child: capture),
+        );
+        final store = registry.store(counter) as _FakeStore<int>;
+        store.replace(42);
 
-      await registry.reset(counter);
-      expect(first.closed, isTrue);
+        registry.reset(counter);
+        expect(store.closed, isFalse, reason: 'holders keep a live store');
+        expect(store.value, 0);
+        expect(registry.store(counter), same(store));
+        expect(adapter.created, hasLength(1));
+      });
 
-      final second = registry.store(counter);
-      expect(second, isNot(same(first)));
-      expect(second.value, 0);
+      // The logout case: a mounted screen holds the store it read in
+      // initState. It must show the reset snapshot and keep writing.
+      testWidgets('updates mounted watchers and keeps their writes working', (
+        tester,
+      ) async {
+        late StateStore<int> held;
+        await tester.pumpWidget(
+          StateScope(
+            adapter: const ValueNotifierStateAdapter(),
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: _HoldsStore(counter, onStore: (store) => held = store),
+            ),
+          ),
+        );
+        held.replace(5);
+        await tester.pump();
+        expect(find.text('held 5'), findsOneWidget);
+
+        StateScope.of(tester.element(find.text('held 5'))).reset(counter);
+        await tester.pump();
+        expect(find.text('held 0'), findsOneWidget);
+
+        held.replace(7);
+        await tester.pump();
+        expect(find.text('held 7'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('uses the scope override as the initial snapshot', (
+        tester,
+      ) async {
+        final registry = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(
+            adapter: adapter,
+            overrides: [counter.overrideWith(() => 5)],
+            child: capture,
+          ),
+        );
+        registry.store(counter).replace(9);
+        registry.reset(counter);
+        expect(registry.store(counter).value, 5);
+      });
+
+      testWidgets('resets an injected store in place', (tester) async {
+        final injected = _FakeStore<int>(99);
+        final registry = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(
+            adapter: adapter,
+            overrides: [counter.overrideWithStore(() => injected)],
+            child: capture,
+          ),
+        );
+        registry.store(counter).replace(3);
+        registry.reset(counter);
+        expect(registry.store(counter), same(injected));
+        expect(injected.closed, isFalse);
+        expect(injected.value, 0, reason: "the declaration's initial value");
+      });
+
+      testWidgets('does not create a store that was never read', (
+        tester,
+      ) async {
+        final registry = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(adapter: adapter, child: capture),
+        );
+        registry.reset(counter);
+        expect(adapter.created, isEmpty);
+      });
+
+      testWidgets('reports the reset to observers as a change', (tester) async {
+        final events = <String>[];
+        final registry = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(
+            adapter: adapter,
+            observers: [_RecordingObserver(events)],
+            child: capture,
+          ),
+        );
+        registry.store(counter).replace(4);
+        registry.reset(counter);
+        expect(events, [
+          'create:counter',
+          'change:counter:0->4',
+          'change:counter:4->0',
+        ]);
+      });
+
+      testWidgets('resets a grouped state through the group that owns it', (
+        tester,
+      ) async {
+        final registry = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(
+            adapter: adapter,
+            child: StateScope.group(owns: [draft], child: capture),
+          ),
+        );
+        registry.store(draft).replace(8);
+        registry.reset(draft);
+        expect(registry.store(draft).value, 0);
+      });
+
+      testWidgets('throws after the scope is disposed', (tester) async {
+        final registry = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(adapter: adapter, child: capture),
+        );
+        registry.store(counter);
+        await tester.pumpWidget(const SizedBox());
+        expect(() => registry.reset(counter), throwsStateError);
+      });
     });
 
     testWidgets('StateObserver receives create, change, and close events', (
@@ -342,26 +460,103 @@ void main() {
       ]);
     });
 
-    testWidgets('StateFamily caches keys per argument and isolates stores', (
+    testWidgets('a rebuilt root applies new observers to existing stores', (
       tester,
     ) async {
+      final events = <String>[];
+      Widget tree(List<StateObserver> observers, Widget capture) =>
+          StateScope(adapter: adapter, observers: observers, child: capture);
+
+      final registry = await pumpAndCapture(
+        tester,
+        (capture) => tree(const [], capture),
+      );
+      final store = registry.store(counter);
+
+      await pumpAndCapture(
+        tester,
+        (capture) => tree([_RecordingObserver(events)], capture),
+      );
+      store.replace(1);
+      expect(events, ['change:counter:0->1']);
+
+      await pumpAndCapture(tester, (capture) => tree(const [], capture));
+      store.replace(2);
+      expect(events, ['change:counter:0->1'], reason: 'observer was removed');
+    });
+
+    testWidgets('a rebuilt root applies new overrides to later reads', (
+      tester,
+    ) async {
+      Widget tree(int seed, Widget capture) => StateScope(
+        adapter: adapter,
+        overrides: [counter.overrideWith(() => seed)],
+        child: capture,
+      );
+      await pumpAndCapture(tester, (capture) => tree(1, capture));
+      final registry = await pumpAndCapture(
+        tester,
+        (capture) => tree(2, capture),
+      );
+      expect(registry.store(counter).value, 2);
+
+      await pumpAndCapture(tester, (capture) => tree(3, capture));
+      registry.reset(counter);
+      expect(registry.store(counter).value, 3);
+    });
+
+    group('StateFamily', () {
       final itemState = StateFamily<String, int>(
         (id) => 'item-$id',
         debugName: 'item',
       );
-      final registry = await pumpAndCapture(
-        tester,
-        (capture) => StateScope(adapter: adapter, child: capture),
-      );
 
-      expect(itemState(1), same(itemState(1)));
-      expect(itemState(1), isNot(same(itemState(2))));
-      expect(registry.store(itemState(1)).value, 'item-1');
-      expect(registry.store(itemState(2)).value, 'item-2');
-      expect(
-        registry.store(itemState(1)),
-        isNot(same(registry.store(itemState(2)))),
-      );
+      test('members for equal arguments are equal keys', () {
+        expect(itemState(1), itemState(1));
+        expect(itemState(1).hashCode, itemState(1).hashCode);
+        expect(itemState(1), isNot(itemState(2)));
+        expect(itemState(1).debugName, 'item(1)');
+
+        final otherFamily = StateFamily<String, int>((id) => 'other-$id');
+        expect(otherFamily(1), isNot(itemState(1)));
+        expect(itemState(1), isNot(AppState<String>(() => 'item-1')));
+      });
+
+      testWidgets('shares one store per argument and isolates others', (
+        tester,
+      ) async {
+        final registry = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(adapter: adapter, child: capture),
+        );
+
+        expect(registry.store(itemState(1)).value, 'item-1');
+        expect(registry.store(itemState(2)).value, 'item-2');
+        expect(
+          registry.store(itemState(1)),
+          same(registry.store(itemState(1))),
+        );
+        expect(
+          registry.store(itemState(1)),
+          isNot(same(registry.store(itemState(2)))),
+        );
+        expect(adapter.created, hasLength(2));
+      });
+
+      testWidgets('an override of one member seeds only that member', (
+        tester,
+      ) async {
+        final registry = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(
+            adapter: adapter,
+            overrides: [itemState(1).overrideWith(() => 'seeded')],
+            child: capture,
+          ),
+        );
+        expect(registry.store(itemState(1)).value, 'seeded');
+        expect(registry.store(itemState(2)).value, 'item-2');
+      });
     });
 
     testWidgets('StateScope.inherit shares a registry without closing it', (
@@ -611,6 +806,135 @@ void main() {
         expect(secondCounter.value, 0);
       },
     );
+
+    // The example app re-keys its root when the user picks another library.
+    testWidgets(
+      'a reparented group uses its new parent adapter and observers',
+      (tester) async {
+        final groupKey = GlobalKey();
+        final secondDraft = AppState<int>.grouped(
+          () => 0,
+          debugName: 'secondDraft',
+        );
+        final firstAdapter = _RecordingAdapter();
+        final secondAdapter = _RecordingAdapter();
+        final firstEvents = <String>[];
+        final secondEvents = <String>[];
+        late StateRegistry groupRegistry;
+        Widget buildTree(Key rootKey, StateAdapter adapter, List<String> log) =>
+            StateScope(
+              key: rootKey,
+              adapter: adapter,
+              observers: [_RecordingObserver(log)],
+              child: StateScope.group(
+                key: groupKey,
+                owns: [draft, secondDraft],
+                child: Builder(
+                  builder: (context) {
+                    groupRegistry = StateScope.of(context);
+                    return const SizedBox();
+                  },
+                ),
+              ),
+            );
+
+        await tester.pumpWidget(
+          buildTree(const ValueKey('root-1'), firstAdapter, firstEvents),
+        );
+        final existing = groupRegistry.store(draft);
+        expect(firstAdapter.created, [existing]);
+
+        await tester.pumpWidget(
+          buildTree(const ValueKey('root-2'), secondAdapter, secondEvents),
+        );
+        expect(groupRegistry.adapter, same(secondAdapter));
+        final created = groupRegistry.store(secondDraft);
+        expect(secondAdapter.created, [created]);
+        expect(firstAdapter.created, [existing]);
+
+        existing.replace(5);
+        expect(secondEvents, ['create:secondDraft', 'change:draft:0->5']);
+        expect(firstEvents, ['create:draft']);
+      },
+    );
+
+    group('owning a StateFamily', () {
+      final itemDraft = StateFamily<String, int>.grouped(
+        (id) => 'draft-$id',
+        debugName: 'itemDraft',
+      );
+
+      testWidgets('creates a store for any argument read inside the group', (
+        tester,
+      ) async {
+        final group = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(
+            adapter: adapter,
+            child: StateScope.group(owns: [itemDraft], child: capture),
+          ),
+        );
+        final first = group.store(itemDraft(41));
+        expect(first.value, 'draft-41');
+        expect(group.store(itemDraft(42)).value, 'draft-42');
+        expect(group.store(itemDraft(41)), same(first));
+      });
+
+      testWidgets('closes the family stores with the group', (tester) async {
+        final group = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(
+            adapter: adapter,
+            child: StateScope.group(owns: [itemDraft], child: capture),
+          ),
+        );
+        final store = group.store(itemDraft(1)) as _FakeStore<String>;
+
+        final root = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(adapter: adapter, child: capture),
+        );
+        expect(store.closed, isTrue);
+        expect(() => root.store(itemDraft(1)), throwsStateError);
+      });
+
+      testWidgets('can override one member of a family it owns', (
+        tester,
+      ) async {
+        final group = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(
+            adapter: adapter,
+            child: StateScope.group(
+              owns: [itemDraft],
+              overrides: [itemDraft(1).overrideWith(() => 'seeded')],
+              child: capture,
+            ),
+          ),
+        );
+        expect(group.store(itemDraft(1)).value, 'seeded');
+        expect(group.store(itemDraft(2)).value, 'draft-2');
+      });
+
+      testWidgets('rejects owning an app-wide family', (tester) async {
+        final appWide = StateFamily<int, int>((id) => id);
+        await tester.pumpWidget(
+          StateScope(
+            adapter: adapter,
+            child: StateScope.group(owns: [appWide], child: const SizedBox()),
+          ),
+        );
+        expect(tester.takeException(), isAssertionError);
+      });
+
+      testWidgets('a root cannot read a grouped family member', (tester) async {
+        final root = await pumpAndCapture(
+          tester,
+          (capture) => StateScope(adapter: adapter, child: capture),
+        );
+        expect(() => root.store(itemDraft(1)), throwsStateError);
+      });
+    });
   });
 
   group('StateStoreOwner', () {
@@ -641,6 +965,30 @@ void main() {
       expect(tester.takeException(), isAssertionError);
     });
   });
+}
+
+/// Reads [state] once in initState, as screens do, and watches that store.
+final class _HoldsStore extends StatefulWidget {
+  const _HoldsStore(this.state, {required this.onStore});
+
+  final AppState<int> state;
+  final void Function(StateStore<int> store) onStore;
+
+  @override
+  State<_HoldsStore> createState() => _HoldsStoreState();
+}
+
+final class _HoldsStoreState extends State<_HoldsStore> {
+  late final StateStore<int> _store = context.store(widget.state);
+
+  @override
+  void initState() {
+    super.initState();
+    widget.onStore(_store);
+  }
+
+  @override
+  Widget build(BuildContext context) => _store.watch((n) => Text('held $n'));
 }
 
 final class _ReadsInInitState extends StatefulWidget {

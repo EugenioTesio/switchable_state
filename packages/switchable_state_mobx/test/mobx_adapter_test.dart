@@ -49,6 +49,34 @@ void main() {
       },
     );
 
+    // An app adopting the adapter may still read its own MobX observables
+    // inside a render callback; those reads must keep rebuilding it.
+    testWidgets('watch and select track other observables read in render', (
+      tester,
+    ) async {
+      final external = Observable(0);
+      final store = adapter.create((a: 1, b: 10));
+      addTearDown(store.close);
+      await tester.pumpWidget(
+        host(
+          Column(
+            children: [
+              store.watch((s) => Text('watch ${s.a} ${external.value}')),
+              store.select(
+                (s) => s.a,
+                (a) => Text('select $a ${external.value}'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      runInAction(() => external.value = 1);
+      await tester.pumpAndSettle();
+      expect(find.text('watch 1 1'), findsOneWidget);
+      expect(find.text('select 1 1'), findsOneWidget);
+    });
+
     test('value reads work under ReactiveReadPolicy.always', () {
       final previous = mainContext.config;
       mainContext.config = previous.clone(

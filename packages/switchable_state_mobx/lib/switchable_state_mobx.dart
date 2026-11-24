@@ -53,13 +53,12 @@ final class _MobXStore<S> implements StateStore<S> {
     runInAction(() => _state.value = next);
   }
 
+  // render stays tracked, so MobX observables it reads still rebuild the
+  // watcher. Reading this or another store's value never subscribes, because
+  // value reads nonObservableValue.
   @override
-  Widget watch(Widget Function(S) render) => Observer(
-    builder: (context) {
-      final snapshot = _state.value;
-      return mainContext.untracked(() => render(snapshot));
-    },
-  );
+  Widget watch(Widget Function(S) render) =>
+      Observer(builder: (context) => render(_state.value));
 
   @override
   Widget select<R>(R Function(S) pick, Widget Function(R) render) =>
@@ -70,16 +69,12 @@ final class _MobXStore<S> implements StateStore<S> {
     if (_closed) return () {};
     var previous = _state.nonObservableValue;
     var canceled = false;
-    final disposeReaction = reaction<S>(
-      (_) => _state.value,
-      (next) {
-        if (canceled || _closed) return;
-        final prev = previous;
-        previous = next;
-        onChange(prev, next);
-      },
-      equals: (a, b) => a == b,
-    );
+    final disposeReaction = reaction<S>((_) => _state.value, (next) {
+      if (canceled || _closed) return;
+      final prev = previous;
+      previous = next;
+      onChange(prev, next);
+    }, equals: (a, b) => a == b);
     return () {
       if (canceled) return;
       canceled = true;
@@ -129,18 +124,13 @@ final class _MobXSelectState<S, R> extends State<_MobXSelect<S, R>> {
   @override
   void didUpdateWidget(_MobXSelect<S, R> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // A rebuilt parent may pass a different store or pick, so derive afresh.
-    if (!identical(oldWidget.state, widget.state) ||
-        oldWidget.pick != widget.pick) {
-      _picked = _compute();
-    }
+    // A rebuilt parent may pass a different store or pick. Even an equal pick,
+    // such as a method tear-off, can read new data from its owner, so always
+    // derive afresh.
+    _picked = _compute();
   }
 
   @override
-  Widget build(BuildContext context) => Observer(
-    builder: (context) {
-      final value = _picked.value;
-      return mainContext.untracked(() => widget.render(value));
-    },
-  );
+  Widget build(BuildContext context) =>
+      Observer(builder: (context) => widget.render(_picked.value));
 }

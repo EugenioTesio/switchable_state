@@ -323,6 +323,29 @@ void stateStoreContract(
         expect(find.text('value 12'), findsOneWidget);
       });
 
+      // Tear-offs of one method on one object compare equal, so a rebuilt
+      // selector can receive an "equal" pick that now reads different data
+      // from its owner. It must re-pick instead of reusing a cached result.
+      testWidgets('a rebuilt selector re-picks when its pick is an equal '
+          'tear-off', (tester) async {
+        final store = create((a: 1, b: 10));
+        final picker = _FieldPicker();
+        Widget tree() =>
+            host(store.select(picker.pick, (v) => Text('value $v')));
+
+        await tester.pumpWidget(tree());
+        expect(find.text('value 1'), findsOneWidget);
+
+        picker.useB = true;
+        await tester.pumpWidget(tree());
+        await tester.pumpAndSettle();
+        expect(find.text('value 10'), findsOneWidget);
+
+        store.replace((a: 1, b: 11));
+        await tester.pumpAndSettle();
+        expect(find.text('value 11'), findsOneWidget);
+      });
+
       testWidgets('a selector nested in another store\'s watcher follows '
           'both stores', (tester) async {
         final outer = create(1);
@@ -579,18 +602,72 @@ void stateStoreContract(
         expect(childBuilds, 1);
       });
 
+      // A route that writes in initState while a StateListener above it
+      // shows a snack bar or navigates: the side effect calls setState on an
+      // ancestor, which Flutter forbids while it is building. A watcher of
+      // another store is mounted too, as in any real screen.
+      testWidgets('StateListener side effects never run during a build', (
+        tester,
+      ) async {
+        final listened = create(0);
+        final watched = create(0);
+        var notified = 0;
+        var showWriter = false;
+        late StateSetter showWriterSetState;
+
+        await tester.pumpWidget(
+          host(
+            StatefulBuilder(
+              builder: (context, setOuterState) => Column(
+                children: [
+                  Text('notified $notified'),
+                  watched.watch((n) => Text('watched $n')),
+                  StateListener<int>(
+                    store: listened,
+                    listener: (context, value) =>
+                        setOuterState(() => notified++),
+                    child: const SizedBox(),
+                  ),
+                  StatefulBuilder(
+                    builder: (context, setState) {
+                      showWriterSetState = setState;
+                      return showWriter
+                          ? _RunsInInitState(() => listened.replace(1))
+                          : const SizedBox();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        showWriterSetState(() => showWriter = true);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(find.text('notified 1'), findsOneWidget);
+        expect(listened.value, 1);
+      });
+
       test('asListenable adapts the store to ValueListenable', () async {
         final store = create(10);
         final listenable = store.asListenable();
-        addTearDown(listenable.dispose);
 
         final values = <int>[];
-        listenable.addListener(() => values.add(listenable.value));
+        void onChange() => values.add(listenable.value);
+        listenable.addListener(onChange);
+        addTearDown(() => listenable.removeListener(onChange));
 
         expect(listenable.value, 10);
         store.replace(11);
         await Future<void>.delayed(Duration.zero);
         expect(values, [11]);
+
+        listenable.removeListener(onChange);
+        store.replace(12);
+        await Future<void>.delayed(Duration.zero);
+        expect(values, [11], reason: 'a removed listener is not called');
+        expect(listenable.value, 12);
       });
     });
 
@@ -653,6 +730,34 @@ final class _Snapshot {
   const _Snapshot(this.label);
 
   final String label;
+}
+
+/// Owns a pick whose tear-off stays `==` while the data it reads changes.
+final class _FieldPicker {
+  bool useB = false;
+
+  int pick(({int a, int b}) s) => useB ? s.b : s.a;
+}
+
+/// Runs [onInit] from `initState`, which happens while Flutter builds.
+final class _RunsInInitState extends StatefulWidget {
+  const _RunsInInitState(this.onInit);
+
+  final VoidCallback onInit;
+
+  @override
+  State<_RunsInInitState> createState() => _RunsInInitStateState();
+}
+
+final class _RunsInInitStateState extends State<_RunsInInitState> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onInit();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox();
 }
 
 final class _WritesNewStoreInInitState extends StatefulWidget {

@@ -10,6 +10,9 @@
 /// ```
 library;
 
+import 'dart:async';
+
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:switchable_state/switchable_state.dart';
@@ -22,6 +25,10 @@ import 'package:switchable_state/switchable_state.dart';
 ///
 /// A [Consumer] under a route covered by another one (with [TickerMode] off)
 /// stops listening and catches up when it is shown again.
+///
+/// Riverpod forbids modifying a provider while Flutter builds a frame. A write
+/// made then, for example from `initState`, updates [StateStore.value] at
+/// once and reaches watchers and listeners right after the frame.
 final class RiverpodStateAdapter implements StateAdapter {
   /// Creates the adapter.
   ///
@@ -44,6 +51,7 @@ final class _RiverpodStore<S> implements StateStore<S> {
 
   S _latest;
   bool _providerMounted = false;
+  bool _publishScheduled = false;
   bool _closed = false;
 
   S _mountNotifier() {
@@ -62,14 +70,27 @@ final class _RiverpodStore<S> implements StateStore<S> {
     if (_closed) throw closedStoreError();
     if (_latest == next) return;
     _latest = next;
-    // Defer touching the container until a watcher or listener mounts the
-    // provider, so writing to a brand-new route store in initState does not
-    // trip Riverpod's global debugCanModifyProviders check on an unrelated
-    // mounted scope.
-    if (_providerMounted) {
-      _container.read(_provider.notifier).replace(next);
+    // An unmounted provider builds from _latest when a watcher or listener
+    // first reads it, so there is nothing to publish yet. A pending publish
+    // already sends the newest snapshot.
+    if (!_providerMounted || _publishScheduled) return;
+    // Riverpod forbids modifying a provider while Flutter builds a frame, for
+    // example from initState or dispose, so publish such a write right after
+    // the frame. Later writes fold into it, so the newest snapshot wins.
+    if (_isFlutterBuilding()) {
+      _publishScheduled = true;
+      scheduleMicrotask(_publishLatest);
+      return;
     }
+    _publish(next);
   }
+
+  void _publishLatest() {
+    _publishScheduled = false;
+    if (!_closed) _publish(_latest);
+  }
+
+  void _publish(S next) => _container.read(_provider.notifier).replace(next);
 
   @override
   Widget watch(Widget Function(S) render) => _RiverpodBridge(
@@ -128,6 +149,9 @@ final class _RiverpodBridge extends StatelessWidget {
         builder: (context, ref, child) {
           final built = builder(context, ref);
           if (outerContainer == null) return built;
+          // Restores the app's container for Riverpod widgets in render. Each
+          // restore registers one more vsync on that container; measured with
+          // 1000 watchers, app provider writes cost no more than without it.
           return UncontrolledProviderScope(
             container: outerContainer,
             child: built,
@@ -143,6 +167,31 @@ final class _RiverpodBridge extends StatelessWidget {
     } on StateError {
       return null;
     }
+  }
+}
+
+/// Whether Flutter is building a frame (build, layout, paint or tree
+/// finalization), when Riverpod forbids modifying providers.
+bool _isFlutterBuilding() {
+  final binding = _schedulerBinding();
+  if (binding == null) return false;
+  if (binding.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+    return true;
+  }
+  // runApp builds the first frame outside the frame callbacks.
+  return binding is WidgetsBinding &&
+      (binding.buildOwner?.debugBuilding ?? false);
+}
+
+SchedulerBinding? _binding;
+
+SchedulerBinding? _schedulerBinding() {
+  if (_binding case final binding?) return binding;
+  try {
+    return _binding = SchedulerBinding.instance;
+  } on Object {
+    // No binding yet, as in a plain Dart test: nothing can be building.
+    return null;
   }
 }
 

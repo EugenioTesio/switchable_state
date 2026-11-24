@@ -3,7 +3,7 @@
 /// @docImport 'value_notifier_adapter.dart';
 library;
 
-import 'package:flutter/foundation.dart' show ChangeNotifier, ValueListenable;
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/widgets.dart';
 
 /// Creates [StateStore]s backed by one state-management library.
@@ -64,6 +64,12 @@ abstract interface class StateStore<S> {
   /// Returns a [VoidCallback] that cancels the subscription. Calling the
   /// returned callback more than once has no effect. If the store is already
   /// closed, returns a no-op callback and never invokes [onChange].
+  ///
+  /// Most adapters call [onChange] inside the write; a Cubit delivers it
+  /// shortly after, through its stream. A write can happen while Flutter
+  /// builds, so run side effects that touch other widgets (navigation, snack
+  /// bars, dialogs) through [StateListener], which always defers them until
+  /// the write has returned.
   VoidCallback listen(void Function(S previous, S current) onChange);
 
   /// Releases the native store and prevents further writes.
@@ -98,35 +104,59 @@ extension StateStoreUpdates<S> on StateStore<S> {
   /// Exposes this store as a [ValueListenable] for Flutter APIs such as
   /// `GoRouter.refreshListenable` or [ValueListenableBuilder].
   ///
-  /// Call [ChangeNotifier.dispose] on the returned
-  /// [StateStoreValueListenable] when it is no longer needed to cancel its
-  /// underlying [StateStore.listen] subscription.
+  /// The result holds a [StateStore.listen] subscription only while it has
+  /// listeners, so it needs no disposal, and calling this inline in `build`
+  /// leaks nothing.
   StateStoreValueListenable<S> asListenable() =>
       StateStoreValueListenable<S>(this);
 }
 
 /// Adapts a [StateStore] to Flutter's [ValueListenable] interface.
-final class StateStoreValueListenable<S> extends ChangeNotifier
-    implements ValueListenable<S> {
+///
+/// It subscribes to the store when its first listener is added and cancels
+/// that subscription when its last listener is removed.
+final class StateStoreValueListenable<S> implements ValueListenable<S> {
   /// Creates a [ValueListenable] backed by [store].
-  StateStoreValueListenable(StateStore<S> store) : _store = store {
-    _unsubscribe = _store.listen((_, _) {
-      if (!_disposed) notifyListeners();
-    });
-  }
+  StateStoreValueListenable(StateStore<S> store) : _store = store;
 
   final StateStore<S> _store;
-  late final VoidCallback _unsubscribe;
-  bool _disposed = false;
+  final List<VoidCallback> _listeners = [];
+  VoidCallback? _cancel;
 
   @override
   S get value => _store.value;
 
   @override
-  void dispose() {
-    if (_disposed) return;
-    _disposed = true;
-    _unsubscribe();
-    super.dispose();
+  void addListener(VoidCallback listener) {
+    _listeners.add(listener);
+    _cancel ??= _store.listen((_, _) => _notifyListeners());
+  }
+
+  @override
+  void removeListener(VoidCallback listener) {
+    _listeners.remove(listener);
+    if (_listeners.isNotEmpty) return;
+    final cancel = _cancel;
+    _cancel = null;
+    cancel?.call();
+  }
+
+  void _notifyListeners() {
+    for (final listener in List.of(_listeners)) {
+      // Like ChangeNotifier, skip listeners removed by an earlier one.
+      if (!_listeners.contains(listener)) continue;
+      try {
+        listener();
+      } catch (exception, stack) {
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: exception,
+            stack: stack,
+            library: 'switchable_state',
+            context: ErrorDescription('while notifying $runtimeType listeners'),
+          ),
+        );
+      }
+    }
   }
 }

@@ -54,11 +54,14 @@ final class _CubitStore<S> extends Cubit<S> implements StateStore<S> {
     builder: (context, snapshot) => render(snapshot),
   );
 
+  // BlocSelector re-picks on a parent rebuild only when the selector is not
+  // ==. A method tear-off stays == while the data it reads changes, so pass a
+  // fresh closure each time to always apply the newest pick.
   @override
   Widget select<R>(R Function(S) pick, Widget Function(R) render) =>
       BlocSelector<_CubitStore<S>, S, R>(
         bloc: this,
-        selector: pick,
+        selector: (state) => pick(state),
         builder: (context, value) => render(value),
       );
 
