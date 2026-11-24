@@ -1,14 +1,25 @@
-/// @docImport 'state_scope.dart';
+/// A `switchable_state` adapter backed only by Flutter's `ValueNotifier`.
+///
+/// Register [ValueNotifierStateAdapter] in the root [StateScope]:
+///
+/// ```dart
+/// StateScope(
+///   adapter: const ValueNotifierStateAdapter(),
+///   child: const MyApp(),
+/// )
+/// ```
 library;
 
 import 'package:flutter/widgets.dart';
+import 'package:switchable_state/switchable_state.dart';
 
-import 'state_adapter.dart';
-
-/// A zero-dependency [StateAdapter] backed only by Flutter's [ValueNotifier].
+/// A [StateAdapter] backed only by Flutter's [ValueNotifier].
 ///
-/// Use it for tests, prototypes, or apps that want [StateScope] and
-/// [StateStore] without adding a third-party state-management library.
+/// Each store is a [ValueNotifier]. [StateStore.watch] uses a
+/// [ValueListenableBuilder], and [StateStore.select] rebuilds only when the
+/// picked value changes. It adds no third-party dependency, so it suits tests,
+/// prototypes, or apps that want [StateScope] without a state-management
+/// library.
 final class ValueNotifierStateAdapter implements StateAdapter {
   /// Creates the adapter.
   ///

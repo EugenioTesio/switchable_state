@@ -326,7 +326,7 @@ void main() {
         late StateStore<int> held;
         await tester.pumpWidget(
           StateScope(
-            adapter: const ValueNotifierStateAdapter(),
+            adapter: adapter,
             child: Directionality(
               textDirection: TextDirection.ltr,
               child: _HoldsStore(counter, onStore: (store) => held = store),
@@ -980,15 +980,24 @@ final class _HoldsStore extends StatefulWidget {
 
 final class _HoldsStoreState extends State<_HoldsStore> {
   late final StateStore<int> _store = context.store(widget.state);
+  late final VoidCallback _cancel;
 
   @override
   void initState() {
     super.initState();
     widget.onStore(_store);
+    // _FakeStore renders once, so rebuild through listen like a watcher.
+    _cancel = _store.listen((_, _) => setState(() {}));
   }
 
   @override
-  Widget build(BuildContext context) => _store.watch((n) => Text('held $n'));
+  void dispose() {
+    _cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Text('held ${_store.value}');
 }
 
 final class _ReadsInInitState extends StatefulWidget {

@@ -32,6 +32,7 @@ Screens read state from a `StateScope` instead of passing it to each other, and 
 | [switchable_state_mobx](packages/switchable_state_mobx) | `MobXStateAdapter` (mobx, flutter_mobx) | [![pub](https://img.shields.io/pub/v/switchable_state_mobx.svg)](https://pub.dev/packages/switchable_state_mobx) |
 | [switchable_state_provider](packages/switchable_state_provider) | `ProviderStateAdapter` (provider) | [![pub](https://img.shields.io/pub/v/switchable_state_provider.svg)](https://pub.dev/packages/switchable_state_provider) |
 | [switchable_state_riverpod](packages/switchable_state_riverpod) | `RiverpodStateAdapter` (flutter_riverpod) | [![pub](https://img.shields.io/pub/v/switchable_state_riverpod.svg)](https://pub.dev/packages/switchable_state_riverpod) |
+| [switchable_state_value_notifier](packages/switchable_state_value_notifier) | `ValueNotifierStateAdapter` (Flutter only) | [![pub](https://img.shields.io/pub/v/switchable_state_value_notifier.svg)](https://pub.dev/packages/switchable_state_value_notifier) |
 | [switchable_state_test](packages/switchable_state_test) | `stateStoreContract`, the conformance suite for adapters | [![pub](https://img.shields.io/pub/v/switchable_state_test.svg)](https://pub.dev/packages/switchable_state_test) |
 
 Start with the [switchable_state README](packages/switchable_state/README.md) or the [documentation site](https://switchable-state.vercel.app/).
@@ -40,7 +41,7 @@ Start with the [switchable_state README](packages/switchable_state/README.md) or
 
 | Path | Contents |
 | --- | --- |
-| `packages/` | The seven published packages |
+| `packages/` | The eight published packages |
 | `example/` | A transactions app that asks which library to use at startup, then routes with go_router |
 | `website/` | The documentation site (Astro Starlight), deployed to GitHub Pages |
 | `.github/workflows/` | CI, the site deployment and tag-triggered publishing |
@@ -60,9 +61,9 @@ Run each member's tests from its folder, for example `cd packages/switchable_sta
 
 | Tests | Count | What they cover |
 | --- | ---: | --- |
-| `packages/switchable_state` | 63 | The scope with a fake adapter: lazy creation, keys, overrides, which stores close with which scope, groups and families, `reset`, observers, `StateStoreOwner`, `StateListener`, `asListenable`, and `update` |
+| `packages/switchable_state` | 62 | The scope with a fake adapter: lazy creation, keys, overrides, which stores close with which scope, groups and families, `reset`, observers, `StateStoreOwner`, `StateListener`, `asListenable`, and `update` |
 | Each adapter package | 38–41 | The shared contract, then that library's own binding |
-| `packages/switchable_state_test` | 34 | The contract against the built-in `ValueNotifierStateAdapter` |
+| `packages/switchable_state_test` | 34 | The contract against a `ValueNotifier` reference adapter |
 | `example` | 67 | The app on all five libraries, go_router route groups, and the README counter |
 
 Use Flutter 3.47 or later (Dart 3.13 or later).

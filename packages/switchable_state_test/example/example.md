@@ -1,6 +1,6 @@
 # switchable_state_test example
 
-A complete adapter built only on Flutter's `ValueNotifier`, checked with the conformance suite. `switchable_state` ships the same adapter as `ValueNotifierStateAdapter`, and this package's own tests run the suite against it: [value_notifier_adapter.dart](https://github.com/EugenioTesio/switchable_state/blob/main/packages/switchable_state/lib/src/value_notifier_adapter.dart).
+A complete adapter built only on Flutter's `ValueNotifier`, checked with the conformance suite. The same file lives in this package's tests: [reference_adapter_test.dart](https://github.com/EugenioTesio/switchable_state/blob/main/packages/switchable_state_test/test/reference_adapter_test.dart). The published [switchable_state_value_notifier](https://pub.dev/packages/switchable_state_value_notifier) adapter is the same idea, ready to use.
 
 ```dart
 import 'package:flutter/widgets.dart';

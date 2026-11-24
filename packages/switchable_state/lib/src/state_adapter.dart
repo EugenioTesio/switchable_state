@@ -1,6 +1,5 @@
 /// @docImport 'state_listener.dart';
 /// @docImport 'state_scope.dart';
-/// @docImport 'value_notifier_adapter.dart';
 library;
 
 import 'package:flutter/foundation.dart' show ValueListenable;
@@ -9,10 +8,10 @@ import 'package:flutter/widgets.dart';
 /// Creates [StateStore]s backed by one state-management library.
 ///
 /// An app registers one stateless adapter at startup, usually through a root
-/// [StateScope]. Built-in and official adapters include
-/// [ValueNotifierStateAdapter], `CubitStateAdapter`, `GetXStateAdapter`,
-/// `MobXStateAdapter`, `ProviderStateAdapter` and `RiverpodStateAdapter`. To
-/// write another one, check it with `stateStoreContract` from
+/// [StateScope]. The official adapters are `CubitStateAdapter`,
+/// `GetXStateAdapter`, `MobXStateAdapter`, `ProviderStateAdapter`,
+/// `RiverpodStateAdapter` and `ValueNotifierStateAdapter`, each in its own
+/// package. To write another one, check it with `stateStoreContract` from
 /// `switchable_state_test`.
 abstract interface class StateAdapter {
   /// Creates an independent store that starts at [initial] and is owned by

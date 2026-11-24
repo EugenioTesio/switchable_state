@@ -78,7 +78,7 @@ An adapter is a stateless class with one method. Its stores implement the member
    }
    ```
 
-   `_Select` is a small `StatefulWidget` that listens to the notifier and calls `setState` only when `pick(notifier.value)` changes. In `build` it picks from the live value, so a new `pick` from a parent rebuild applies at once. `switchable_state` ships this adapter as `ValueNotifierStateAdapter`; its source, [value_notifier_adapter.dart](https://github.com/EugenioTesio/switchable_state/blob/main/packages/switchable_state/lib/src/value_notifier_adapter.dart), is the complete reference.
+   `_Select` is a small `StatefulWidget` that listens to the notifier and calls `setState` only when `pick(notifier.value)` changes. In `build` it picks from the live value, so a new `pick` from a parent rebuild applies at once. The [switchable_state_value_notifier](https://pub.dev/packages/switchable_state_value_notifier) package publishes this adapter as `ValueNotifierStateAdapter`; its source, [switchable_state_value_notifier.dart](https://github.com/EugenioTesio/switchable_state/blob/main/packages/switchable_state_value_notifier/lib/switchable_state_value_notifier.dart), is the complete reference.
 
 3. **Run the contract.**
 

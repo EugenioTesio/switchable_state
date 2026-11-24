@@ -10,7 +10,6 @@ New:
 - Nullable snapshots, for example `AppState<User?>(() => null)`.
 - `StateStore.listen`, and the `StateListener` widget for side effects such as navigation or snack bars. `StateListener` runs its listener after the write has returned on every adapter, so a write made while Flutter builds never runs a side effect mid-build.
 - `asListenable()`: a `ValueListenable` for `ValueListenableBuilder` or go_router's `refreshListenable`. It listens to the store only while it has listeners, so it needs no disposal.
-- `ValueNotifierStateAdapter`: a built-in adapter with no third-party dependency.
 - `StateObserver`: create, change and close events for every store a scope hierarchy owns, registered with `StateScope(observers: ...)`.
 - `StateFamily`: keys parameterized by an argument. A `StateScope.group` can own a whole `StateFamily.grouped`, so its members close with the group.
 - `StateRegistry.reset` returns a store to its initial snapshot in place, for example on logout. Widgets holding the store see the reset and keep working.

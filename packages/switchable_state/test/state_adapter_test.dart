@@ -54,33 +54,6 @@ void main() {
     expect(closedStoreError(), isA<StateError>());
   });
 
-  group('ValueNotifierStateAdapter', () {
-    testWidgets('supports watch, select, listen, and nullable state', (
-      tester,
-    ) async {
-      const adapter = ValueNotifierStateAdapter();
-      final store = adapter.create<String?>(null);
-      addTearDown(store.close);
-
-      final events = <(String?, String?)>[];
-      final cancel = store.listen((p, n) => events.add((p, n)));
-      addTearDown(cancel);
-
-      await tester.pumpWidget(
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: store.watch((s) => Text(s ?? 'empty')),
-        ),
-      );
-      expect(find.text('empty'), findsOneWidget);
-
-      store.replace('ready');
-      await tester.pump();
-      expect(find.text('ready'), findsOneWidget);
-      expect(events, [(null, 'ready')]);
-    });
-  });
-
   group('asListenable', () {
     test('subscribes to the store only while it has listeners', () {
       final store = _RecordingStore<int>(0);

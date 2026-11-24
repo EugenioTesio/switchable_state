@@ -1,6 +1,6 @@
 # Publishing switchable_state
 
-This guide covers the documentation home page and releasing the seven packages to pub.dev.
+This guide covers the documentation home page and releasing the eight packages to pub.dev.
 
 ## The home page
 
@@ -65,13 +65,13 @@ The site address comes from two environment variables read by `astro.config.mjs`
 
 ## Releasing to pub.dev
 
-Seven packages are published from `packages/`, all at the same version:
+Eight packages are published from `packages/`, all at the same version:
 
 | Order | Package |
 | ---: | --- |
 | 1 | `switchable_state` |
 | 2 | `switchable_state_test` (the adapters' tests depend on it) |
-| 3 | `switchable_state_bloc`, `switchable_state_getx`, `switchable_state_mobx`, `switchable_state_provider`, `switchable_state_riverpod` |
+| 3 | `switchable_state_bloc`, `switchable_state_getx`, `switchable_state_mobx`, `switchable_state_provider`, `switchable_state_riverpod`, `switchable_state_value_notifier` |
 
 ### Before every release
 
@@ -101,7 +101,7 @@ cd packages/switchable_state_test && dart pub publish
 cd packages/switchable_state_bloc && dart pub publish
 ```
 
-Repeat for `switchable_state_getx`, `switchable_state_mobx`, `switchable_state_provider` and `switchable_state_riverpod`. The first `dart pub publish` opens a browser to sign in with your Google account.
+Repeat for `switchable_state_getx`, `switchable_state_mobx`, `switchable_state_provider`, `switchable_state_riverpod` and `switchable_state_value_notifier`. The first `dart pub publish` opens a browser to sign in with your Google account.
 
 ### Turn on automated publishing
 
