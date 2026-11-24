@@ -17,12 +17,12 @@ dependencies:
   get_it: ^9.3.0
   go_router: ^18.1.4
   material_ui: ^1.11.1
-  switchable_state: ^0.1.0
-  switchable_state_bloc: ^0.1.0
-  switchable_state_getx: ^0.1.0
-  switchable_state_mobx: ^0.1.0
-  switchable_state_provider: ^0.1.0
-  switchable_state_riverpod: ^0.1.0
+  switchable_state: ^0.2.0
+  switchable_state_bloc: ^0.2.0
+  switchable_state_getx: ^0.2.0
+  switchable_state_mobx: ^0.2.0
+  switchable_state_provider: ^0.2.0
+  switchable_state_riverpod: ^0.2.0
 
 dev_dependencies:
   flutter_lints: ^6.0.0

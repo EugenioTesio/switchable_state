@@ -46,12 +46,14 @@ void main() {
 | `replace` | Sets the notifier's `state` |
 | `watch` | `Consumer` + `ref.watch(provider)` |
 | `select` | `ref.watch(provider.select(pick))` |
+| `listen` | `ProviderContainer.listen(provider, ...)` |
 | `close` | `ProviderContainer.dispose()`, keeping the last snapshot |
 
 ## Things to know
 
 - **Hidden routes pause.** A `Consumer` under a route covered by `push()` stops listening while `TickerMode` is off and replays the missed update when shown. The other adapters keep rebuilding while hidden; both show the latest state.
-- **No `ProviderScope` needed.** Each store brings its own container, so adding this adapter doesn't change your widget tree.
+- **No `ProviderScope` needed.** Each store brings its own container, so adding this adapter doesn't change your widget tree. If the app has a `ProviderScope`, Riverpod widgets inside `watch` and `select` still see it.
+- **Writes during a build arrive after the frame.** Riverpod forbids modifying a provider while Flutter builds. A write made then, for example from `initState`, updates `value` at once and reaches watchers and listeners right after the frame.
 - **Not listed as web compatible.** flutter_riverpod 3.5 depends on `flutter_test`, so pub.dev doesn't mark it, or this adapter, as web compatible.
 
 This adapter passes the shared [conformance suite](../../guides/custom-adapter/#what-the-suite-checks), like the other four. [API reference](https://pub.dev/documentation/switchable_state_riverpod/latest/)
