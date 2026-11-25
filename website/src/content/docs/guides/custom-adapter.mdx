@@ -5,7 +5,7 @@ description: Implement StateAdapter for another library and prove it with the co
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 
-An adapter is a stateless class with one method. Its stores implement the six members of [the contract](../../concepts/contract/). The `switchable_state_test` package checks the result against the same suite the five official adapters pass.
+An adapter is a stateless class with one method. Its stores implement the members of [the contract](../../concepts/contract/). The `switchable_state_test` package checks the result against the same suite the five official adapters pass.
 
 <Steps>
 
@@ -18,16 +18,15 @@ An adapter is a stateless class with one method. Its stores implement the six me
 2. **Implement `StateAdapter` and `StateStore`.** This adapter uses nothing but Flutter's `ValueNotifier`:
 
    ```dart
-   final class ValueNotifierStateAdapter implements StateAdapter {
-     const ValueNotifierStateAdapter();
+   final class NotifierStateAdapter implements StateAdapter {
+     const NotifierStateAdapter();
 
      @override
-     StateStore<S> create<S extends Object>(S initial) =>
-         _ValueNotifierStore<S>(initial);
+     StateStore<S> create<S>(S initial) => _NotifierStore<S>(initial);
    }
 
-   final class _ValueNotifierStore<S extends Object> implements StateStore<S> {
-     _ValueNotifierStore(S initial) : _notifier = ValueNotifier<S>(initial);
+   final class _NotifierStore<S> implements StateStore<S> {
+     _NotifierStore(S initial) : _notifier = ValueNotifier<S>(initial);
 
      final ValueNotifier<S> _notifier;
      bool _closed = false;
@@ -36,8 +35,12 @@ An adapter is a stateless class with one method. Its stores implement the six me
      S get value => _notifier.value;
 
      @override
+     bool get isClosed => _closed;
+
+     @override
      void replace(S next) {
        if (_closed) throw closedStoreError(); // the same error on every adapter
+       if (_notifier.value == next) return; // equal writes notify no one
        _notifier.value = next;
      }
 
@@ -52,6 +55,21 @@ An adapter is a stateless class with one method. Its stores implement the six me
          _Select<S, R>(notifier: _notifier, pick: pick, render: render);
 
      @override
+     VoidCallback listen(void Function(S previous, S current) onChange) {
+       if (_closed) return () {};
+       var previous = _notifier.value;
+       void listener() {
+         final current = _notifier.value;
+         final before = previous;
+         previous = current;
+         onChange(before, current);
+       }
+
+       _notifier.addListener(listener);
+       return () => _notifier.removeListener(listener);
+     }
+
+     @override
      Future<void> close() async {
        if (_closed) return; // later calls do nothing
        _closed = true;
@@ -60,14 +78,14 @@ An adapter is a stateless class with one method. Its stores implement the six me
    }
    ```
 
-   `_Select` is a small `StatefulWidget` that listens to the notifier and calls `setState` only when `pick(notifier.value)` changes. In `build` it picks from the live value, so a new `pick` from a parent rebuild applies at once. The complete file is [value_notifier_adapter_test.dart](https://github.com/EugenioTesio/switchable_state/blob/main/packages/switchable_state_test/test/value_notifier_adapter_test.dart).
+   `_Select` is a small `StatefulWidget` that listens to the notifier and calls `setState` only when `pick(notifier.value)` changes. In `build` it picks from the live value, so a new `pick` from a parent rebuild applies at once. The [switchable_state_value_notifier](https://pub.dev/packages/switchable_state_value_notifier) package publishes this adapter as `ValueNotifierStateAdapter`; its source, [switchable_state_value_notifier.dart](https://github.com/EugenioTesio/switchable_state/blob/main/packages/switchable_state_value_notifier/lib/switchable_state_value_notifier.dart), is the complete reference.
 
 3. **Run the contract.**
 
    ```dart
    import 'package:switchable_state_test/switchable_state_test.dart';
 
-   void main() => stateStoreContract(const ValueNotifierStateAdapter());
+   void main() => stateStoreContract(const NotifierStateAdapter());
    ```
 
    ```sh
@@ -78,11 +96,13 @@ An adapter is a stateless class with one method. Its stores implement the six me
 
 ## What the suite checks
 
-- **value:** the initial snapshot, immediate writes, `update` against the latest snapshot, independent stores, and object identity.
-- **watch:** rendering on mount, several watchers, no rebuilds from unrelated stores, a new `render` after a parent rebuild, remounting.
-- **select:** rebuilds only when the pick changes (render calls are counted), a new `pick` after a parent rebuild, nesting inside another store's watcher.
+- **value:** the initial snapshot, nullable snapshots, immediate writes, `update` against the latest snapshot, independent stores, object identity, and `isClosed`.
+- **watch:** rendering on mount, several watchers, no rebuilds from unrelated stores or from an equal write, a new `render` after a parent rebuild, remounting, and moving a watcher to another store. Reading any store's `value` inside `render` must not subscribe.
+- **select:** rebuilds only when the pick changes (render calls are counted), nullable picks, a new `pick` after a parent rebuild (even an `==` method tear-off that now reads other data), nesting inside another store's watcher, and moving a selector to another store.
+- **Writes during a build:** a store written from `initState` while other watchers are mounted, and a `StateListener` side effect triggered that way.
+- **listen:** previous and current snapshots, cancelling, a closed store, `StateListener`, and `asListenable`.
 - **Hidden routes:** watchers under `TickerMode(enabled: false)` catch up once shown.
-- **close:** the last snapshot is kept, `replace` throws a `StateError`, and a second `close` does nothing.
+- **close:** the last snapshot is kept, `replace` and `update` throw a `StateError`, and a second `close` does nothing.
 
 <Aside>
 If your library stops listening while a route is hidden, as Riverpod does, pass `pausesHiddenWatchers: true`. The suite then expects the old value while hidden and the new one once shown.

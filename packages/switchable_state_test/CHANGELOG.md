@@ -1,3 +1,8 @@
+## 0.2.0
+
+- Checks the `switchable_state` 0.2 contract: nullable snapshots, `isClosed`, `listen`, `StateListener`, `asListenable`, equal writes, `value` reads that must not subscribe, moving a watcher or selector to another store, writes from `initState`, and re-picking with an `==` method tear-off.
+- The `ValueNotifier` reference adapter in this package's tests implements the 0.2 contract. A ready-to-use version is published as `switchable_state_value_notifier`.
+
 ## 0.1.0
 
 - Initial release.

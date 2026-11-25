@@ -3,7 +3,7 @@ description: >-
   One state-management contract for Flutter, with scopes for app-wide, route-
   group and route-owned stores. Swap Cubit, GetX, MobX, Provider or Riverpod
   without touching screens.
-version: 0.1.0
+version: 0.2.0
 homepage: https://switchable-state.vercel.app/
 repository: https://github.com/EugenioTesio/switchable_state/tree/main/packages/switchable_state
 issue_tracker: https://github.com/EugenioTesio/switchable_state/issues

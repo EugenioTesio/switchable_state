@@ -1,0 +1,28 @@
+name: switchable_state_value_notifier
+description: >-
+  ValueNotifier adapter for switchable_state. Each store is a ValueNotifier,
+  rendered with ValueListenableBuilder, with no third-party dependency.
+version: 0.2.0
+homepage: https://switchable-state.vercel.app/
+repository: https://github.com/EugenioTesio/switchable_state/tree/main/packages/switchable_state_value_notifier
+issue_tracker: https://github.com/EugenioTesio/switchable_state/issues
+topics:
+  - state-management
+  - value-notifier
+
+environment:
+  sdk: ^3.13.0
+  flutter: '>=3.47.0'
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  switchable_state: ^0.2.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  switchable_state_test: ^0.2.0

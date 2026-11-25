@@ -13,4 +13,5 @@ workspace:
   - packages/switchable_state_mobx
   - packages/switchable_state_provider
   - packages/switchable_state_riverpod
+  - packages/switchable_state_value_notifier
   - example

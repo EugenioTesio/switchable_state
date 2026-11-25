@@ -2,7 +2,7 @@ name: switchable_state_getx
 description: >-
   GetX adapter for switchable_state. Each store is an Rx value rendered with
   Obx, with selective rebuilds and no GetMaterialApp needed.
-version: 0.1.0
+version: 0.2.0
 homepage: https://switchable-state.vercel.app/
 repository: https://github.com/EugenioTesio/switchable_state/tree/main/packages/switchable_state_getx
 issue_tracker: https://github.com/EugenioTesio/switchable_state/issues
@@ -21,10 +21,10 @@ dependencies:
   flutter:
     sdk: flutter
   get: ^4.7.3
-  switchable_state: ^0.1.0
+  switchable_state: ^0.2.0
 
 dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
-  switchable_state_test: ^0.1.0
+  switchable_state_test: ^0.2.0

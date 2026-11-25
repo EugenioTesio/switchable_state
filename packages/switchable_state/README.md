@@ -24,6 +24,7 @@ This package holds the contract and the scope. Add it together with the adapter 
 | `switchable_state_mobx` | MobX | [![pub](https://img.shields.io/pub/v/switchable_state_mobx.svg)](https://pub.dev/packages/switchable_state_mobx) |
 | `switchable_state_provider` | provider | [![pub](https://img.shields.io/pub/v/switchable_state_provider.svg)](https://pub.dev/packages/switchable_state_provider) |
 | `switchable_state_riverpod` | flutter_riverpod | [![pub](https://img.shields.io/pub/v/switchable_state_riverpod.svg)](https://pub.dev/packages/switchable_state_riverpod) |
+| `switchable_state_value_notifier` | Flutter only (`ValueNotifier`) | [![pub](https://img.shields.io/pub/v/switchable_state_value_notifier.svg)](https://pub.dev/packages/switchable_state_value_notifier) |
 | `switchable_state_test` | Conformance tests for adapters | [![pub](https://img.shields.io/pub/v/switchable_state_test.svg)](https://pub.dev/packages/switchable_state_test) |
 
 ## Install
