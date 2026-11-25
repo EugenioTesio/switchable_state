@@ -38,6 +38,7 @@ import trio from '../../assets/screens/trio.webp';
 	<a class="chip" style="--dot: var(--ss-mobx)" href="./adapters/mobx/">MobX</a>
 	<a class="chip" style="--dot: var(--ss-provider)" href="./adapters/provider/">Provider</a>
 	<a class="chip" style="--dot: var(--ss-riverpod)" href="./adapters/riverpod/">Riverpod</a>
+	<a class="chip" style="--dot: var(--ss-valuenotifier)" href="./adapters/value-notifier/">ValueNotifier</a>
 </div>
 
 ## Why switchable_state
@@ -55,9 +56,21 @@ import trio from '../../assets/screens/trio.webp';
 		A store is app-wide, shared by a group of routes, or owned by one route. Its owner closes it, the
 		way Riverpod's `autoDispose` or `BlocProvider(create:)` do.
 	</Card>
+	<Card title="Side effects without rebuilds" icon="rocket">
+		`StateListener` shows a snack bar or navigates when a store changes, like `BlocListener` or
+		`ref.listen`, and never mid-build.
+	</Card>
+	<Card title="Families and observers" icon="magnifier">
+		`StateFamily` gives one store per argument, and a `StateObserver` sees every store the app
+		creates, changes and closes.
+	</Card>
 	<Card title="Proven by one test suite" icon="approve-check">
-		The same conformance suite runs against all five adapters, and you can run it against your own
-		with `switchable_state_test`.
+		The same conformance suite runs against every official adapter, and you can run it against your
+		own with `switchable_state_test`.
+	</Card>
+	<Card title="No dependency needed" icon="puzzle">
+		`switchable_state_value_notifier` runs the same contract on Flutter's own `ValueNotifier`, for
+		tests, prototypes or apps that want no state library.
 	</Card>
 </CardGrid>
 
@@ -98,11 +111,19 @@ The same screen, unchanged, on each library:
 	<Architecture />
 </Diagram>
 
+## Contributors
+
+- [Eugenio Tesio](https://github.com/EugenioTesio)
+- [Alan Monteiro](https://github.com/alanmonteiro32)
+
+See all [contributors on GitHub](https://github.com/EugenioTesio/switchable_state/graphs/contributors).
+
 ## Next steps
 
 <CardGrid>
 	<LinkCard title="Getting started" description="Declare state, add a scope, read and write from widgets." href="./getting-started/" />
 	<LinkCard title="Who owns a store" description="App-wide, route-group and route-owned stores, and when each one closes." href="./concepts/ownership/" />
+	<LinkCard title="Side effects and observers" description="StateListener, listen, asListenable and StateObserver." href="./concepts/observing/" />
 	<LinkCard title="Routes with go_router" description="ShellRoute groups, and what go() and push() do to your stores." href="./guides/go-router/" />
 	<LinkCard title="Compare the libraries" description="How Riverpod, flutter_bloc, provider, MobX and GetX keep state alive." href="./reference/comparison/" />
 </CardGrid>

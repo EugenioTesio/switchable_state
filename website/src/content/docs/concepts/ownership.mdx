@@ -17,6 +17,8 @@ Whether state survives a navigation is decided by **who owns its store**, not by
 | --- | --- | --- | --- | --- |
 | `AppState(...)` | The root `StateScope` | On first read | When the root scope is disposed | A keep-alive Riverpod provider, a `BlocProvider` above the app |
 | `AppState.grouped(...)` | The `StateScope.group` that lists it in `owns` | On first read inside the group | When the user leaves the group | A provider inside a go_router `ShellRoute` |
+| `StateFamily(...)` | The root `StateScope`, one store per argument | On first read of `family(arg)` | When the root scope is disposed | A keep-alive Riverpod `family` |
+| `StateFamily.grouped(...)` | The `StateScope.group` that lists the family in `owns` | On first read of `family(arg)` inside the group | When the user leaves the group | A Riverpod `family` inside a `ShellRoute` |
 | `createStore(...)` | One `State` using `StateStoreOwner` | In `initState` | After that `State`'s `dispose` | Riverpod `autoDispose`, `BlocProvider(create:)` |
 
 ## App-wide state
@@ -29,6 +31,8 @@ final starredState = AppState<StarredState>(
 
 // Anywhere below the root scope, on any screen:
 final starred = StateScope.of(context).store(starredState);
+// or, shorter:
+final starred = context.store(starredState);
 ```
 
 Each declaration is its own key, so two `AppState<int>` declarations get two separate stores. That avoids provider's "one instance per type" limit.
@@ -48,6 +52,24 @@ ShellRoute(
 ```
 
 Pages inside the group share `draftState`. Leaving the group disposes the `StateScope.group` and closes its stores; coming back starts fresh. Reading a grouped state outside any group that owns it throws a `StateError`. App-wide states are still passed up to the root, so pages in a group read both.
+
+## One store per argument
+
+A `StateFamily` declares a key per argument, like a Riverpod `family`. Calling it with an argument returns an `AppState` key, and keys for equal arguments are equal, so every screen that reads `todoState(42)` shares one store:
+
+```dart
+final todoState = StateFamily<Todo?, int>((id) => null, debugName: 'todo');
+
+final todo = context.store(todoState(42));
+```
+
+The family itself keeps nothing per argument. An app-wide member's store lives until the root scope is disposed, so for arguments without a bound, such as one entry per item id, declare the family as grouped and own the whole family in a group. Its members then close with the group:
+
+```dart
+final draftLineState = StateFamily<Line, String>.grouped((sku) => Line.empty(sku));
+
+StateScope.group(owns: [draftState, draftLineState], child: child)
+```
 
 ## State owned by one route
 
@@ -81,7 +103,31 @@ Call `createStore` from `initState`, never from `build`: that would create a new
 
 ## Reading from initState
 
-`StateScope.of(context)` registers no rebuild dependency, so it is safe in `initState`. Widgets rebuild through [`watch` and `select`](../../concepts/rebuilds/) instead.
+`StateScope.of(context)` and `context.store(state)` register no rebuild dependency, so they are safe in `initState`. Widgets rebuild through [`watch` and `select`](../../concepts/rebuilds/) instead.
+
+`StateScope.maybeOf(context)` returns `null` when there is no scope above, instead of throwing.
+
+## Dialogs and pushed routes
+
+A dialog, bottom sheet or route pushed on the root navigator is mounted above any `StateScope.group`, so it can't see the group's stores. Pass the group's registry down with `StateScope.inherit`. It exposes the stores without owning them, so closing the dialog closes nothing:
+
+```dart
+final registry = StateScope.of(context);
+showDialog<void>(
+  context: context,
+  builder: (_) => StateScope.inherit(registry: registry, child: const EditDraftDialog()),
+);
+```
+
+## Starting a store over
+
+`reset` returns a store to its initial snapshot, for example on logout. The initial snapshot is the scope's override, if any, or the declared value:
+
+```dart
+StateScope.of(context).reset(sessionState);
+```
+
+The store instance is kept, so widgets and listeners that hold it see the reset like any other write and can keep writing to it. Resetting a store that was never created does nothing. Work still in flight, such as a pending request, can write to the store afterwards, so cancel it first if that matters.
 
 ## Overrides
 
@@ -94,3 +140,5 @@ StateScope(
   child: const MyApp(),
 )
 ```
+
+A group can also override single members of a family it owns, such as `todoState(42).overrideWith(...)`. To replace the store itself with a fake, use `overrideWithStore`; see [Testing](../../guides/testing/#start-from-prepared-state).

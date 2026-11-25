@@ -49,3 +49,10 @@ See the [switchable_state README](https://pub.dev/packages/switchable_state) for
 - It is also the smallest complete adapter, so its source is a good reference when [writing your own](https://switchable-state.vercel.app/guides/custom-adapter/).
 
 This adapter passes the shared conformance suite from [switchable_state_test](https://pub.dev/packages/switchable_state_test), like the other adapters.
+
+## Contributors
+
+- [Eugenio Tesio](https://github.com/EugenioTesio)
+- [Alan Monteiro](https://github.com/alanmonteiro32)
+
+See all [contributors on GitHub](https://github.com/EugenioTesio/switchable_state/graphs/contributors).

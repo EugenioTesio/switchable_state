@@ -49,3 +49,10 @@ See the [switchable_state README](https://pub.dev/packages/switchable_state) for
 - flutter_riverpod 3.5 depends on `flutter_test`, so pub.dev doesn't list it, or this adapter, as web compatible.
 
 This adapter passes the shared conformance suite from [switchable_state_test](https://pub.dev/packages/switchable_state_test), like the other four.
+
+## Contributors
+
+- [Eugenio Tesio](https://github.com/EugenioTesio)
+- [Alan Monteiro](https://github.com/alanmonteiro32)
+
+See all [contributors on GitHub](https://github.com/EugenioTesio/switchable_state/graphs/contributors).

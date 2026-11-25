@@ -22,13 +22,13 @@ switchable_state gives every screen the same small API for state, whichever libr
    final counterState = AppState<int>(() => 0, debugName: 'counter');
    ```
 
-   Snapshots should be immutable. Use your own classes with `==` for anything bigger than a number.
+   Snapshots should be immutable. Use your own classes with `==` for anything bigger than a number. They can be nullable too, for example `AppState<User?>(() => null)`.
 
 3. **Put a `StateScope` above your app** and give it the adapter. The highlighted lines are the only ones that name a library.
 
    <AdapterTabs variant="main" />
 
-4. **Read and write from any widget below it.** `StateScope.of(context).store(key)` returns the same store everywhere; `watch` rebuilds when it changes and `update` writes a new snapshot.
+4. **Read and write from any widget below it.** `StateScope.of(context).store(key)` returns the same store everywhere; `watch` rebuilds when it changes and `update` writes a new snapshot. `context.store(key)` is the short form.
 
    ```dart
    class CounterPage extends StatelessWidget {
@@ -48,12 +48,26 @@ switchable_state gives every screen the same small API for state, whichever libr
    }
    ```
 
-5. **Switch libraries** by swapping the adapter package, its import and the adapter, as the tabs above show. Nothing else changes.
+5. **React to changes with side effects.** For a snack bar, a dialog or navigation, wrap a subtree in `StateListener`. It calls `listener` when the store changes, without rebuilding `child`, like `BlocListener` or Riverpod's `ref.listen`:
+
+   ```dart
+   StateListener<int>(
+     store: context.store(counterState),
+     listenWhen: (previous, current) => current == 10,
+     listener: (context, count) => ScaffoldMessenger.of(context)
+         .showSnackBar(const SnackBar(content: Text('You reached 10!'))),
+     child: const CounterView(),
+   )
+   ```
+
+   The listener runs after the write has returned, on every library, so a write made during a build never runs a side effect mid-build.
+
+6. **Switch libraries** by swapping the adapter package, its import and the adapter, as the tabs above show. Nothing else changes. `ValueNotifier` needs no third-party library at all.
 
 </Steps>
 
 <Aside type="tip" title="This snippet is tested">
-The counter above runs in the example's test suite on all five adapters, so it keeps compiling and behaving the same as the packages evolve.
+The counter in steps 2 to 4 runs in the example's test suite on all five third-party adapters, so it keeps compiling and behaving the same as the packages evolve.
 </Aside>
 
 ## What to read next
@@ -61,3 +75,4 @@ The counter above runs in the example's test suite on all five adapters, so it k
 - [The contract](../concepts/contract/): every member of `StateStore` and what each adapter guarantees.
 - [Who owns a store](../concepts/ownership/): app-wide, route-group and route-owned state.
 - [Rebuilding with watch and select](../concepts/rebuilds/): rebuild only for the part of a snapshot a widget reads.
+- [Side effects and observers](../concepts/observing/): `StateListener`, `listen`, `asListenable` and `StateObserver`.

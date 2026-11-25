@@ -40,6 +40,37 @@ await tester.pumpWidget(
 expect(find.text('Starred (1)'), findsOneWidget);
 ```
 
+`overrideWithStore` goes further and replaces the store itself, for a fake or a spy. The scope takes ownership of it and closes it with the scope:
+
+```dart
+final store = const CubitStateAdapter().create(const StarredState.initial());
+
+StateScope(
+  adapter: const CubitStateAdapter(),
+  overrides: [starredState.overrideWithStore(() => store)],
+  child: const MaterialApp(home: StarredPage()),
+)
+
+// Later: the test can read or write the same store the screen uses.
+expect(store.value.starred, isEmpty);
+```
+
+## Record what changed
+
+A [`StateObserver`](../../concepts/observing/#observers) on the test's scope records every change, whichever adapter runs, so a test can check the sequence of snapshots a screen produced:
+
+```dart
+final class RecordingObserver extends StateObserver {
+  final changes = <Object?>[];
+
+  @override
+  void onChange(AppState<Object?> state, Object? previous, Object? next) =>
+      changes.add(next);
+}
+```
+
+Pass it with `StateScope(observers: [observer], ...)`, then assert on `observer.changes`.
+
 ## Run every test on every library
 
 Because screens only see the contract, one loop covers all five adapters:

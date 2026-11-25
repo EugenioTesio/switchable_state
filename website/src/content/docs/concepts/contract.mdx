@@ -34,7 +34,7 @@ Two extension methods build on these for every adapter:
 | `void update(S Function(S) change)` | Replaces the snapshot with `change(value)`, reading the latest value even after an `await`. Skips the write when the result is `==` to the current snapshot, and throws a `StateError` after `close` without calling `change`. |
 | `asListenable()` | A `ValueListenable<S>` for Flutter APIs such as `ValueListenableBuilder` or go_router's `refreshListenable`. It listens to the store only while it has listeners, so it needs no disposal. |
 
-For side effects such as navigation, snack bars and dialogs, wrap a subtree in `StateListener`. It runs its `listener` after the write has returned, on every adapter, so a write made while Flutter builds never runs a side effect mid-build.
+For side effects such as navigation, snack bars and dialogs, wrap a subtree in `StateListener`. It runs its `listener` after the write has returned, on every adapter, so a write made while Flutter builds never runs a side effect mid-build. See [Side effects and observers](../observing/).
 
 ## Same behaviour on every library
 

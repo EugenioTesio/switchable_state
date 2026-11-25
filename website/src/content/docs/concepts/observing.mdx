@@ -1,0 +1,107 @@
+---
+title: Side effects and observers
+description: React to changes outside build with StateListener, listen and asListenable, and watch every store with a StateObserver.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+`watch` and `select` rebuild widgets. Some changes should do something else instead: show a snack bar, navigate, log, or tell another API that a value changed. switchable_state has four tools for that, and they work the same on every adapter.
+
+| Tool | Use it for | Similar to |
+| --- | --- | --- |
+| `StateListener` | One-shot side effects in the widget tree: snack bars, dialogs, navigation | `BlocListener`, Riverpod's `ref.listen` |
+| `store.listen` | Reacting to one store from code that isn't a widget | `Cubit.stream.listen`, `ChangeNotifier.addListener` |
+| `store.asListenable()` | Flutter APIs that take a `ValueListenable` or `Listenable` | — |
+| `StateObserver` | Logging, analytics and debugging for every store in the app | Riverpod's `ProviderObserver`, `BlocObserver` |
+
+## StateListener
+
+`StateListener` calls `listener` when its store changes and never rebuilds `child`. `listenWhen` filters the transitions it reacts to. Here a snack bar appears only on entering the failed state, not on every later write while the state stays failed:
+
+```dart
+StateListener<TransactionsState>(
+  store: store,
+  listenWhen: (previous, current) =>
+      previous.status != LoadStatus.failed &&
+      current.status == LoadStatus.failed,
+  listener: (context, state) => ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(const SnackBar(content: Text('Couldn’t load transactions.'))),
+  child: const TransactionsView(),
+)
+```
+
+The example app's Transactions screen does exactly this, and its tests run it on all five third-party libraries.
+
+<Aside title="Never mid-build">
+A write can happen while Flutter builds, for example from a route's `initState`. `StateListener` always runs `listener` after the write has returned, in a microtask, whichever adapter is registered, so a side effect never runs in the middle of a build. Events that arrive after the widget unmounts, or after it switches to another store, are dropped.
+</Aside>
+
+## listen
+
+`listen` is the lower-level subscription that `StateListener` is built on. It calls `onChange(previous, current)` on every change and returns a callback that cancels it:
+
+```dart
+final cancel = store.listen((previous, current) {
+  analytics.log('filter', current.pendingOnly);
+});
+
+// Later, for example in dispose:
+cancel();
+```
+
+Calling the cancel callback twice does nothing, and listening to a closed store returns a callback that does nothing. Most adapters call `onChange` inside the write; Cubit calls it shortly after, through its stream. Run side effects that touch other widgets through `StateListener` instead, so they never run during a build.
+
+## asListenable
+
+`asListenable()` exposes a store as a `ValueListenable`, for Flutter APIs that expect one, such as `ValueListenableBuilder` or go_router's `refreshListenable`:
+
+```dart
+final session = context.store(sessionState);
+
+GoRouter(
+  refreshListenable: session.asListenable(),
+  redirect: (context, state) => session.value == null ? '/login' : null,
+  routes: [/* ... */],
+)
+```
+
+It subscribes to the store only while it has listeners, so it needs no disposal, and calling it inline in `build` leaks nothing.
+
+## Observers
+
+A `StateObserver` hears about every store a scope hierarchy creates, changes and closes, whichever adapter runs. Register it on the root scope; groups below the root report to the root's observers.
+
+```dart
+final class LoggingObserver extends StateObserver {
+  @override
+  void onCreate(AppState<Object?> state, StateStore<Object?> store) =>
+      debugPrint('create $state');
+
+  @override
+  void onChange(AppState<Object?> state, Object? previous, Object? next) =>
+      debugPrint('$state: $previous -> $next');
+
+  @override
+  void onClose(AppState<Object?> state) => debugPrint('close $state');
+}
+
+void main() {
+  runApp(
+    StateScope(
+      adapter: const RiverpodStateAdapter(),
+      observers: [LoggingObserver()],
+      child: const MyApp(),
+    ),
+  );
+}
+```
+
+Override only the hooks you need. Give your `AppState` declarations a `debugName` so the log is readable.
+
+- `onChange` also runs when [`reset`](../ownership/#starting-a-store-over) returns a store to its initial snapshot.
+- Observers see the stores a scope owns: app-wide, grouped and family members. Stores created with `createStore` belong to one route and aren't reported.
+- `StateObserver` is a `base` class, so declare your subclass `final` or `base`. That lets new hooks be added later without breaking your observer.
+- When the root rebuilds with new observers, they replace the old ones for every store. An observer added that way sees later changes and closes of stores that already exist, but not their creation.
+
+Observers are also handy in tests: see [Record what changed](../../guides/testing/#record-what-changed).

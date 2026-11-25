@@ -22,6 +22,7 @@ const adapters = [
 	{ label: 'Provider', pkg: 'switchable_state_provider', cls: 'ProviderStateAdapter' },
 	{ label: 'GetX', pkg: 'switchable_state_getx', cls: 'GetXStateAdapter' },
 	{ label: 'MobX', pkg: 'switchable_state_mobx', cls: 'MobXStateAdapter' },
+	{ label: 'ValueNotifier', pkg: 'switchable_state_value_notifier', cls: 'ValueNotifierStateAdapter' },
 ];
 
 const install = (a: (typeof adapters)[number]) => `flutter pub add switchable_state ${a.pkg}`;
@@ -41,7 +42,7 @@ void main() => runApp(
 );
 
 // In any widget below the scope:
-final counter = StateScope.of(context).store(counterState);
+final counter = context.store(counterState);
 counter.watch((count) => Text('$count'));
 counter.update((count) => count + 1);`;
 

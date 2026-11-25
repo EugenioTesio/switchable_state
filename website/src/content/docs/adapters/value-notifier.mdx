@@ -1,0 +1,49 @@
+---
+title: ValueNotifier
+description: The ValueNotifier adapter for switchable_state, backed only by Flutter, with no third-party dependency.
+---
+
+import PubBadge from '../../../components/PubBadge.astro';
+
+<PubBadge pkg="switchable_state_value_notifier" />
+
+[`switchable_state_value_notifier`](https://pub.dev/packages/switchable_state_value_notifier) runs switchable_state on Flutter's own [`ValueNotifier`](https://api.flutter.dev/flutter/foundation/ValueNotifier-class.html). It adds no dependency beyond Flutter.
+
+Each store is a `ValueNotifier` that notifies only when the snapshot changes. `watch` renders with a `ValueListenableBuilder`; `select` uses a small widget that rebuilds only when the pick changes.
+
+```sh
+flutter pub add switchable_state switchable_state_value_notifier
+```
+
+```dart
+import 'package:switchable_state/switchable_state.dart';
+import 'package:switchable_state_value_notifier/switchable_state_value_notifier.dart';
+
+void main() {
+  runApp(
+    const StateScope(
+      adapter: ValueNotifierStateAdapter(),
+      child: MyApp(),
+    ),
+  );
+}
+```
+
+## How it maps to Flutter
+
+| Contract | Flutter |
+| --- | --- |
+| Store | A `ValueNotifier` |
+| `watch` | `ValueListenableBuilder` |
+| `select` | A widget that listens to the notifier and rebuilds only when the pick changes, compared with `==` |
+| `listen` | `ValueNotifier.addListener` |
+| `close` | `ValueNotifier.dispose` |
+
+## Things to know
+
+- **When to use it.** Tests, prototypes, or apps that don't want a state-management dependency. Moving to another library later only changes the adapter passed to `StateScope`.
+- **Synchronous.** Watchers and listeners hear about a write inside the write itself, like most adapters. Cubit delivers it shortly after, through a stream.
+- **A reference to copy.** It is the smallest complete adapter, so its source is a good starting point when you [write your own](../../guides/custom-adapter/).
+- **Not in the example app.** The example app and its screenshots cover the five third-party libraries.
+
+This adapter passes the shared [conformance suite](../../guides/custom-adapter/#what-the-suite-checks), like the other five. [API reference](https://pub.dev/documentation/switchable_state_value_notifier/latest/)

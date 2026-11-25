@@ -48,3 +48,10 @@ See the [switchable_state README](https://pub.dev/packages/switchable_state) for
 - Stores are looked up by declaration, not by type, so two states of the same type never collide.
 
 This adapter passes the shared conformance suite from [switchable_state_test](https://pub.dev/packages/switchable_state_test), like the other four.
+
+## Contributors
+
+- [Eugenio Tesio](https://github.com/EugenioTesio)
+- [Alan Monteiro](https://github.com/alanmonteiro32)
+
+See all [contributors on GitHub](https://github.com/EugenioTesio/switchable_state/graphs/contributors).

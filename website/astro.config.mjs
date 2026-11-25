@@ -42,6 +42,7 @@ export default defineConfig({
 						{ label: 'The contract', slug: 'concepts/contract' },
 						{ label: 'Who owns a store', slug: 'concepts/ownership' },
 						{ label: 'Rebuilding with watch and select', slug: 'concepts/rebuilds' },
+						{ label: 'Side effects and observers', slug: 'concepts/observing' },
 					],
 				},
 				{
@@ -60,6 +61,7 @@ export default defineConfig({
 						{ label: 'MobX', slug: 'adapters/mobx' },
 						{ label: 'Provider', slug: 'adapters/provider' },
 						{ label: 'Riverpod', slug: 'adapters/riverpod' },
+						{ label: 'ValueNotifier', slug: 'adapters/value-notifier' },
 					],
 				},
 				{

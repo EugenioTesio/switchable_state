@@ -8,6 +8,7 @@
 	--ss-mobx: #e2486f;
 	--ss-provider: #0ea5c6;
 	--ss-riverpod: #8b5cf6;
+	--ss-valuenotifier: #64748b;
 }
 
 :root[data-theme='light'] {

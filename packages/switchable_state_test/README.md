@@ -39,3 +39,10 @@ void main() {
 One difference between libraries is allowed. Riverpod stops listening while a route is hidden and catches up when shown; pass `pausesHiddenWatchers: true` if your adapter does the same.
 
 `host(child)` wraps a widget in the text direction that `Text` needs, for widget tests without an app.
+
+## Contributors
+
+- [Eugenio Tesio](https://github.com/EugenioTesio)
+- [Alan Monteiro](https://github.com/alanmonteiro32)
+
+See all [contributors on GitHub](https://github.com/EugenioTesio/switchable_state/graphs/contributors).

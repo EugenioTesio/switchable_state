@@ -68,6 +68,13 @@ Run each member's tests from its folder, for example `cd packages/switchable_sta
 
 Use Flutter 3.47 or later (Dart 3.13 or later).
 
+## Contributors
+
+- [Eugenio Tesio](https://github.com/EugenioTesio)
+- [Alan Monteiro](https://github.com/alanmonteiro32)
+
+See all [contributors on GitHub](https://github.com/EugenioTesio/switchable_state/graphs/contributors).
+
 ## License
 
 [MIT](LICENSE)
